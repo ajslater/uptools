@@ -1,19 +1,14 @@
-#!/bin/sh
-PIPVERSION=`pip -V | cut -d ' ' -f 2`
+#!/usr/bin/env bash
 printf "Finding outdated packages..."
-if [  "$PIPVERSION" \< "1.3" ]; then
-  LIST=`pip freeze --local | egrep -v '^(\-e|[[:space:]]*#)' | cut -d = -f 1  | tr '\n' ' '`
-else
-  SOME_LIST=`pip list -lo --allow-all-external | grep -v 'Could\ not\ find\|You\ are\|You\ should\|Some insecure\|The\ directory' | cut -d ' ' -f 1 | tr '\n' ' '`
-  #TODO Fix Regex Some thing
-  for i in $SOME_LIST; do
-      if [[ "$i" != "Some" ]]; then
+SOME_LIST=$(pip list -lo | grep -v 'Could\ not\ find\|You\ are\|You\ should\|Some insecure\|The\ directory' | cut -d ' ' -f 1 | tr '\n' ' ')
+#TODO Fix Regex Some thing
+for i in $SOME_LIST; do
+    if [[ "$i" != "Some" ]]; then
         LIST=$LIST" "$i
-      fi
-   done;
-fi
+    fi
+done;
 if [ -n "$LIST" ]; then
-    echo upgrading: $LIST
+    echo "upgrading: $LIST"
     pip install -U $LIST
 else
     echo everything is up to date!
