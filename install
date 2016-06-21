@@ -1,0 +1,2 @@
+#!/bin/sh
+cp pipup /usr/local/bin/
