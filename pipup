@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
 printf "Finding outdated packages..."
-SOME_LIST=$(pip list -lo | grep -v 'Could\ not\ find\|You\ are\|You\ should\|Some insecure\|The\ directory' | cut -d ' ' -f 1 | tr '\n' ' ')
-#TODO Fix Regex Some thing
+EXCLUDE='Could\ not\ find\|You\ are\|You\ should\|Some insecure\|The\ directory'
+SOME_LIST=$(pip list -lo | grep -v "$EXCLUDE" | cut -d ' ' -f 1 | tr '\n' ' ')
 for i in $SOME_LIST; do
     if [[ "$i" != "Some" ]]; then
         LIST=$LIST" "$i
     fi
 done;
 if [ -n "$LIST" ]; then
-    echo "upgrading: $LIST"
-    pip install -U $LIST
+    echo
+    echo pip install -U "$LIST"
+    pip install -U "$LIST"
 else
     echo everything is up to date!
 fi

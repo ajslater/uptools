@@ -1,5 +1,7 @@
-pipup
-=====
+# uptools
+scripts for updating various scripting languages
+
+## pipup
 
 A simple shell script for updating your pip installed python packages.
 
@@ -9,10 +11,15 @@ Created because [`pip-review -al` seems to parse version numbers in a funny way]
 
 Built to use pip >= 8.0.0
 
-Installation
-------------
-A simple installer script is provided to copy the script to `/usr/local/bin/`
+## brewup
+update, upgrade and cleanup homebrew packages.
 
-```bash
-./install
-```
+## upall
+Update homebrew, python, npm, ruby and perl at once.
+Depends on brewup and pipup
+
+## brew-scripts
+Install homebrew versions of python, npm, ruby and perl as well as tools for updating perl.
+
+## install
+run brew-scripts and copy the updater scripts to /usr/local/bin/
