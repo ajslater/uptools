@@ -1,5 +1,5 @@
 # uptools
-scripts for updating various scripting languages
+scripts for updating various scripting packages
 
 ## pipup
 
