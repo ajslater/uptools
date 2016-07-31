@@ -23,3 +23,4 @@ Install homebrew versions of python, npm, ruby and perl as well as tools for upd
 
 ## install
 run brew-scripts and copy the updater scripts to /usr/local/bin/
+optionally installs symlinks to this cloned directory with -l parameter
