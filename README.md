@@ -1,5 +1,6 @@
 # uptools
 scripts for updating various scripting packages
+pipup is cross platform. The others are for macOS.
 
 ## pipup
 
