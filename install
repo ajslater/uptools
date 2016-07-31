@@ -1,3 +1,9 @@
 #!/bin/sh
 ./brew-scripts
-cp pipup brewup upall /usr/local/bin/
+if [ "$1" = '-l' ]; then
+    cmd="ln -sf"
+else
+    cmd="cp"
+fi
+
+$cmd "$PWD"/pipup "$PWD"/brewup "$PWD"/upall /usr/local/bin/
