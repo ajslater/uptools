@@ -1,9 +1,9 @@
-#!/usr/bin/env bash
+#!/bin/sh
 printf "Finding outdated packages..."
 EXCLUDE='Could\ not\ find\|You\ are\|You\ should\|Some insecure\|The\ directory'
 SOME_LIST=$(pip list -lo | grep -v "$EXCLUDE" | cut -d ' ' -f 1 | tr '\n' ' ')
 for i in $SOME_LIST; do
-    if [[ "$i" != "Some" ]]; then
+    if [ "$i" != "Some" ]; then
         LIST=$LIST" "$i
     fi
 done;
