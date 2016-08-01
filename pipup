@@ -7,10 +7,14 @@ for i in $SOME_LIST; do
         LIST=$LIST" "$i
     fi
 done;
+
 if [ -n "$LIST" ]; then
+    pip_upgrade() {
+        pip install -U "$@"
+    }
     echo
     echo pip install -U "$LIST"
-    pip install -U "$LIST"
+    pip_upgrade $LIST
 else
     echo everything is up to date!
 fi
