@@ -1,0 +1,4 @@
+#!/bin/sh
+PACKAGES=$(cpan-outdated)
+echo cpanm $PACKAGES
+cpanm $PACKAGES

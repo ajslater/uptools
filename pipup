@@ -14,7 +14,7 @@ if [ -n "$LIST" ]; then
     }
     echo
     echo pip install -U "$LIST"
-    pip_upgrade $LIST
+    pip_upgrade "$LIST"
 else
     echo everything is up to date!
 fi

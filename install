@@ -6,4 +6,4 @@ else
     cmd="cp"
 fi
 
-$cmd "$PWD"/pipup "$PWD"/brewup "$PWD"/upall /usr/local/bin/
+$cmd "$PWD"/pipup "$PWD"/brewup "$PWD"/upall "$PWD"/perlup /usr/local/bin/

@@ -1,6 +1,6 @@
 # uptools
 scripts for updating various scripting packages
-pipup is cross platform. The others are for macOS.
+pipup and perlup are cross platform. The others are for macOS.
 
 ## pipup
 
@@ -11,6 +11,9 @@ pipup parses `pip list --outdated --local` and pipes it into `pip install --upgr
 Created because [`pip-review -al` seems to parse version numbers in a funny way](https://github.com/nvie/pip-tools/issues/44) leading to unexpected downgrades.
 
 Built to use pip >= 8.0.0
+
+## perlup
+updates perl packages with cpanminus and cpan-outdated
 
 ## brewup
 update, upgrade and cleanup homebrew packages.

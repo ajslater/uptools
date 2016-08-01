@@ -1,2 +1,2 @@
 #!/bin/sh
-brewup && pipup && npm -g update && gem update && cpan-outdated | cpanm
+brewup && pipup && npm -g update && gem update && perlup
