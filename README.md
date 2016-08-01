@@ -1,6 +1,7 @@
 # uptools
-scripts for updating various scripting packages
-pipup and perlup are cross platform. The others are for macOS.
+
+Scripts for updating packages for homebrew, python, node, ruby & perl.
+pipup and perlup are cross platform. The others are macOS & homebrew specific.
 
 ## pipup
 
