@@ -1,4 +1,0 @@
-#!/bin/sh
-# Install homebrew versions of python, npm, ruby, and perl
-brew install python npm ruby perl cpanm && cpanm App::cpanoutdated
-ln -sf /usr/local/Cellar/perl/*/bin/cpan-outdated /usr/local/bin/

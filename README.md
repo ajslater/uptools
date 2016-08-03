@@ -23,9 +23,14 @@ update, upgrade and cleanup homebrew packages.
 Update homebrew, python, npm, ruby and perl at once.
 Depends on brewup, pipup, and perlup
 
-## brew-scripts
+## install
 Install homebrew versions of python, npm, ruby and perl as well as tools for updating perl.
 
-## install
-run brew-scripts and copy the updater scripts to /usr/local/bin/
-optionally installs symlinks to this cloned directory with -l parameter
+Copy or symlink the updater scripts to /usr/local/bin/
+Optionally installs symlinks to this cloned directory with -l parameter
+
+### Install and usage
+```sh
+$ ./install -l
+$ upall
+```
