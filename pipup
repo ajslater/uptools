@@ -9,6 +9,6 @@ if [ -n "$LIST" ]; then
     echo "$cmd"
     $cmd
 else
-    echo everything is up to date!
+    echo Python packages are up to date.
 fi
 echo done.
