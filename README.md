@@ -21,7 +21,7 @@ update, upgrade and cleanup homebrew packages.
 
 ## upall
 Update homebrew, python, npm, ruby and perl at once.
-Depends on brewup and pipup
+Depends on brewup, pipup, and perlup
 
 ## brew-scripts
 Install homebrew versions of python, npm, ruby and perl as well as tools for updating perl.
