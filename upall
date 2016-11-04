@@ -1,2 +1,2 @@
 #!/bin/sh
-brewup && pipup && npm -g update && gem update && perlup
+brewup && pip-review --auto && npm -g update && gem update && perlup

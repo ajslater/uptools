@@ -11,8 +11,10 @@ cmd_echo() {
 }
 
 # Install homebrew versions of python, npm, ruby, and perl
-cmd_echo brew install python npm ruby perl cpanm && cmd_echo cpanm App::cpanoutdated
+cmd_echo brew install python npm ruby perl cpanm
+cmd_echo pip install pip-review
+cmd_echo cpanm App::cpanoutdated
 
 cmd_echo ln -sf /usr/local/Cellar/perl/*/bin/cpan-outdated /usr/local/bin/
 
-cmd_echo $target_cmd "$PWD"/pipup "$PWD"/brewup "$PWD"/upall "$PWD"/perlup /usr/local/bin/
+cmd_echo $target_cmd "$PWD"/brewup "$PWD"/upall "$PWD"/perlup /usr/local/bin/
