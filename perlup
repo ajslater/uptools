@@ -1,4 +1,8 @@
 #!/bin/sh
+# Lazy auto install of cpanm-outdated, as it is occasionally uninstalled by
+# the rest of this processees
+cpanm App::cpanoutdated | grep -v "App::cpanoutdated is up to date."
+ln -sf /usr/local/Cellar/perl/*/bin/cpan-outdated /usr/local/bin/
 PACKAGES=$(cpan-outdated)
 if [ -n "$PACKAGES" ]; then
   cmd="cpanm $PACKAGES"
