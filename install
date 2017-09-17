@@ -1,20 +1,26 @@
 #!/bin/sh
-if [ "$1" = '-l' ]; then
+set -eux
+if [ "${1:-}" = '-l' ]; then
     target_cmd="ln -sf"
 else
     target_cmd="cp"
 fi
 
-cmd_echo() {
-    echo "$@"
-    "$@"
-}
 
-# Install homebrew versions of python, npm, ruby, and perl
-cmd_echo brew install python npm ruby perl cpanm
-cmd_echo pip install pip-review
-cmd_echo cpanm App::cpanoutdated
+# python
+brew install python
+pip2 install pip-review
 
-cmd_echo ln -sf /usr/local/Cellar/perl/*/bin/cpan-outdated /usr/local/bin/
+# node
+brew install npm
 
-cmd_echo $target_cmd "$PWD"/brewup "$PWD"/upall "$PWD"/perlup /usr/local/bin/
+# ruby
+brew install ruby
+
+# perl
+brew install perl cpanm
+cpanm App::cpanoutdated
+ln -sf /usr/local/Cellar/perl/*/bin/cpan-outdated /usr/local/bin/
+
+# this repo's custom scripts
+$target_cmd "$PWD"/brewup "$PWD"/upall "$PWD"/perlup /usr/local/bin/
