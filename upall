@@ -1,2 +1,20 @@
 #!/bin/sh
-brewup && pip-review --auto && npm -g update && gem update && perlup
+set -eu
+
+BOLD=$(tput bold)
+NORMAL=$(tput sgr0)
+
+title() {
+  echo "${BOLD}Updating $*:${NORMAL}"
+}
+
+title "homebrew"
+brewup
+title "python"
+pip-review --auto
+title "node"
+npm -g update
+title "ruby"
+gem update
+title "perl"
+perlup
