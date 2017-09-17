@@ -1,2 +1,5 @@
 #!/bin/sh
-brew update && brew upgrade --cleanup
+set -eu
+
+brew update
+brew upgrade --cleanup
