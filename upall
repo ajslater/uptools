@@ -15,6 +15,6 @@ pip-review --auto
 title "node"
 npm -g update
 title "ruby"
-gem update
+gemup
 title "perl"
 perlup

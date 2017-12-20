@@ -1,0 +1,4 @@
+#!/bin/sh
+eval "$(rbenv init -)"
+gem update --system
+gem update

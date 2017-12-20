@@ -15,7 +15,7 @@ pip2 install pip-review
 brew install npm
 
 # ruby
-brew install ruby
+brew install ruby rbenv
 
 # perl
 brew install perl cpanm
@@ -23,4 +23,4 @@ cpanm App::cpanoutdated
 ln -sf /usr/local/Cellar/perl/*/bin/cpan-outdated /usr/local/bin/
 
 # this repo's custom scripts
-$target_cmd "$PWD"/brewup "$PWD"/upall "$PWD"/perlup /usr/local/bin/
+$target_cmd "$PWD"/brewup "$PWD"/upall "$PWD"/gemup "$PWD"/perlup /usr/local/bin/
