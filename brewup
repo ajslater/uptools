@@ -3,3 +3,5 @@ set -eu
 
 brew update
 brew upgrade --cleanup
+brew cask upgrade
+brew cask cleanup
