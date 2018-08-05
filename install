@@ -12,7 +12,7 @@ brew install python
 pip2 install pip-review
 
 # node
-brew install npm
+brew install npm || brew upgrade node
 
 # ruby
 brew install ruby rbenv
