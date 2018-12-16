@@ -1,4 +1,4 @@
 #!/bin/sh
 eval "$(rbenv init -)"
-gem update --system
-gem update
+gem update --system | grep -v "Latest version already installed. Done."
+gem update | grep -v "Updating installed gems"
