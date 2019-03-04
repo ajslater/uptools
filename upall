@@ -10,8 +10,10 @@ title() {
 
 title "homebrew"
 brewup
-title "python"
+title "python3"
 pip-review --auto
+title "python2"
+pip-review2 --auto
 title "node"
 npm -g update
 title "ruby"

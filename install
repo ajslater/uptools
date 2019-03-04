@@ -7,18 +7,21 @@ else
 fi
 
 
+# basics
+brew install python2 python3 npm ruby rbenv perl cpanm
+
 # python
-brew install python
 pip2 install pip-review
+mv /usr/local/bin/pip-review /usr/local/bin/pip-review2
+pip3 install pip-review
 
 # node
-brew install npm || brew upgrade node
+# n/a
 
 # ruby
-brew install ruby rbenv
+# n/a
 
 # perl
-brew install perl cpanm
 cpanm App::cpanoutdated
 ln -sf /usr/local/Cellar/perl/*/bin/cpan-outdated /usr/local/bin/
 
