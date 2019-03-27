@@ -3,14 +3,14 @@
 Scripts for updating packages for homebrew, python, node, ruby & perl.
 pipup and perlup are cross platform. The others are macOS & homebrew specific.
 
-# gemup
-updates ruby gem updater and gems
-
-# perlup
-updates perl packages with cpanminus and cpan-outdated
-
 ## brewup
 update, upgrade and cleanup homebrew packages.
+
+## gemup
+updates ruby gem updater and gems
+
+## perlup
+updates perl packages with cpanminus and cpan-outdated
 
 ## upall
 Update homebrew, python, npm, ruby and perl at once.
