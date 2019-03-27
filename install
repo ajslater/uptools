@@ -6,7 +6,6 @@ else
     target_cmd="cp"
 fi
 
-
 # basics
 brew install python2 python3 npm ruby rbenv perl cpanm
 
