@@ -11,8 +11,10 @@ fi
 brew install python2 python3 npm ruby rbenv perl cpanm
 
 # python
+pip2 uninstall -y pip-review
 pip2 install pip-review
 mv /usr/local/bin/pip-review /usr/local/bin/pip-review2
+pip3 uninstall -y pip-review
 pip3 install pip-review
 
 # node
