@@ -1,4 +1,5 @@
 #!/bin/bash
+# update all perl packages
 set -uo pipefail
 
 # Lazy auto install of cpanm-outdated, as it is occasionally uninstalled by

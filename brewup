@@ -1,4 +1,5 @@
 #!/bin/sh
+# update homebrew and casks
 set -eu
 
 brew update

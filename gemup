@@ -1,4 +1,5 @@
 #!/bin/sh
+# update ruby and its gems
 eval "$(rbenv init -)"
 gem update --system | grep -v "Latest version already installed. Done."
 gem update | grep -v "Updating installed gems"
