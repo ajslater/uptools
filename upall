@@ -11,6 +11,8 @@ title() {
 
 title "homebrew"
 brewup
+title "rust"
+cargo install-update -a
 title "python3"
 pip-review --auto
 title "python2"
