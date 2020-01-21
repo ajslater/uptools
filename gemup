@@ -1,5 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 # update ruby and its gems
+set -euo pipefail
+
+source uptitle
+
+title ruby
 eval "$(rbenv init -)"
 gem update --system | grep -v "Latest version already installed. Done."
 gem update | grep -v "Updating installed gems"

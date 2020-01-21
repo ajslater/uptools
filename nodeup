@@ -1,0 +1,8 @@
+#!/bin/bash
+# update node and its packages
+set -euo pipefail
+
+source uptitle
+
+title node
+npm -g update

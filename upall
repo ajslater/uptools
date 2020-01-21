@@ -1,25 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 # run all the update scripts
-set -eu
+set -euo pipefail
 
-BOLD=$(tput bold)
-NORMAL=$(tput sgr0)
-
-title() {
-  echo "${BOLD}Updating $*:${NORMAL}"
-}
-
-title "homebrew"
 brewup
-title "rust"
-cargo install-update -a
-title "python3"
-pip-review --auto
-title "python2"
-pip-review2 --auto
-title "node"
-npm -g update
-title "ruby"
+rustup
+pipup
+nodeup
 gemup
-title "perl"
 perlup

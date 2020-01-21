@@ -2,6 +2,9 @@
 # update all perl packages
 set -uo pipefail
 
+source uptitle
+
+title perl
 # Lazy auto install of cpanm-outdated, as it is occasionally uninstalled by
 # something
 cpanm App::cpanoutdated | grep -v "App::cpanoutdated is up to date."

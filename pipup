@@ -1,0 +1,15 @@
+#!/bin/bash
+set -euo pipefail
+
+BOLD=$(tput bold)
+NORMAL=$(tput sgr0)
+title() {
+  echo "${BOLD}Updating $*:${NORMAL}"
+}
+
+title "python3"
+pip-review --auto
+title "python2"
+pip-review2 --auto
+title "Fix poetry"
+pip3 install -U poetry
