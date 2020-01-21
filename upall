@@ -6,5 +6,5 @@ brewup
 rustup
 pipup
 nodeup
-gemup
+gemup || true
 perlup
