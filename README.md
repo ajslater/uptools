@@ -1,25 +1,24 @@
 # uptools
-
 Scripts for updating packages for homebrew, python, node, ruby & perl.
 pipup and perlup are cross platform. The others are macOS & homebrew specific.
 
 ## brewup
-update, upgrade and cleanup homebrew packages.
+Update, upgrade and cleanup homebrew packages.
 
 ## rustup
-update rust cargo
+Update rust cargo
 
 ## pipup
-update python2 and python3 packages
+Update python2 and python3 packages
 
 ## nodeup
-update npm packages
+Update npm packages
 
 ## gemup
-updates ruby gem updater and gems
+Updates ruby gem updater and gems
 
 ## perlup
-updates perl packages with cpanminus and cpan-outdated
+Updates perl packages with cpanminus and cpan-outdated
 
 ## upall
 Update homebrew, python, npm, ruby and perl at once.
