@@ -6,6 +6,15 @@ pipup and perlup are cross platform. The others are macOS & homebrew specific.
 ## brewup
 update, upgrade and cleanup homebrew packages.
 
+## rustup
+update rust cargo
+
+## pipup
+update python2 and python3 packages
+
+## nodeup
+update npm packages
+
 ## gemup
 updates ruby gem updater and gems
 
