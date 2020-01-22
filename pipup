@@ -9,7 +9,10 @@ title() {
 
 title "python3"
 pip-review --auto
-title "python2"
-pip-review2 --auto
+
+# If only pip was as sophisticated as apt
 echo "${BOLD}Fix poetry${NORMAL}"
 pip3 install -U poetry
+
+title "python2"
+pip-review2 --auto
