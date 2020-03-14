@@ -9,7 +9,7 @@ Update, upgrade and cleanup homebrew packages.
 Update rust cargo
 
 ## pipup
-Update python2 and python3 packages
+Update python3 packages
 
 ## nodeup
 Update npm packages
