@@ -8,17 +8,12 @@ else
 fi
 
 # basics
-brew install rust python2 python3 npm ruby rbenv perl cpanm
+brew install rust python3 npm ruby rbenv perl cpanm
 
 # rust
 cargo install cargo-update || true
 
 # python
-# do some gymnastics so have pip2 & pip3 pip-review on the system at once
-pip2 uninstall -y pip-review
-pip2 install pip-review
-mv /usr/local/bin/pip-review /usr/local/bin/pip-review2
-pip3 uninstall -y pip-review
 pip3 install pip-review
 
 # node

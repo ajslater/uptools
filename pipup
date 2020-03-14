@@ -14,5 +14,5 @@ pip-review --auto
 echo "${BOLD}Fix poetry${NORMAL}"
 pip3 install -U poetry
 
-title "python2"
-pip-review2 --auto
+#title "python2"
+#pip-review2 --auto
