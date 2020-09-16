@@ -7,5 +7,4 @@ source uptitle
 title homebrew
 brew update
 HOMEBREW_INSTALL_CLEANUP=1 brew upgrade
-brew upgrade --cask
 brew cleanup
