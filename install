@@ -8,7 +8,7 @@ else
 fi
 
 # basics
-brew install rust python3 npm ruby rbenv perl cpanm
+brew install rust python3 npm ruby rbenv luarocks perl cpanm
 
 # rust
 cargo install cargo-update || true
@@ -27,4 +27,4 @@ cpanm App::cpanoutdated
 ln -sf /usr/local/Cellar/perl/*/bin/cpan-outdated /usr/local/bin/
 
 # this repo's custom scripts
-$target_cmd "$PWD"/uptitle "$PWD"/brewup "$PWD"/upall "$PWD"/gemup "$PWD"/perlup "$PWD"/nodeup "$PWD"/rustup "$PWD"/pipup /usr/local/bin/
+$target_cmd "$PWD"/uptitle "$PWD"/brewup "$PWD"/upall "$PWD"/gemup "$PWD"/perlup "$PWD"/nodeup "$PWD"/rustup "$PWD"/pipup "$PWD"/luaup /usr/local/bin/

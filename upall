@@ -7,4 +7,5 @@ rustup
 pipup
 nodeup
 gemup || true
+luaup
 perlup

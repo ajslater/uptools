@@ -1,0 +1,14 @@
+#!/bin/bash
+set -euo pipefail
+
+BOLD=$(tput bold)
+NORMAL=$(tput sgr0)
+title() {
+  echo "${BOLD}Updating $*:${NORMAL}"
+}
+
+title "lua"
+OUTDATED=$(luarocks list --outdated --porcelain)
+if [[ -n "$OUTDATED" ]]; then
+  echo $OUTDATED | luarocks install
+fi
