@@ -17,6 +17,9 @@ Update npm packages
 ## gemup
 Updates ruby gem updater and gems
 
+## luaup
+Updates lua rocks
+
 ## perlup
 Updates perl packages with cpanminus and cpan-outdated
 

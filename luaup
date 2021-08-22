@@ -1,4 +1,5 @@
 #!/bin/bash
+# Updates lua rocks
 set -euo pipefail
 
 BOLD=$(tput bold)

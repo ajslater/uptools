@@ -1,4 +1,5 @@
 #!/bin/bash
+# Updates python packages
 set -euo pipefail
 
 BOLD=$(tput bold)
