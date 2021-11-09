@@ -8,7 +8,9 @@ title perl
 # Lazy auto install of cpanm-outdated, as it is occasionally uninstalled by
 # something
 cpanm App::cpanoutdated | grep -v "App::cpanoutdated is up to date." || true
-ln -sf /usr/local/Cellar/perl/*/bin/cpan-outdated /usr/local/bin/
+BREW_PREFIX=$(brew --prefix)
+# shellcheck disable=SC2086
+ln -sf $BREW_PREFIX/Cellar/perl/*/bin/cpan-outdated /usr/local/bin/
 
 # Only update if there are things to update.
 PACKAGES=$(cpan-outdated)

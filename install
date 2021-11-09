@@ -24,7 +24,9 @@ pip3 install pip-review
 
 # perl
 cpanm App::cpanoutdated
-ln -sf /usr/local/Cellar/perl/*/bin/cpan-outdated /usr/local/bin/
+# shellcheck disable=SC2086
+BREW_PREFX=$(brew --prefix)
+ln -sf $BREW_PREFIX/Cellar/perl/*/bin/cpan-outdated /usr/local/bin/
 
 # this repo's custom scripts
 $target_cmd "$PWD"/uptitle "$PWD"/brewup "$PWD"/upall "$PWD"/gemup "$PWD"/perlup "$PWD"/nodeup "$PWD"/rustup "$PWD"/pipup "$PWD"/luaup /usr/local/bin/
