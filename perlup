@@ -13,11 +13,10 @@ BREW_PREFIX=$(brew --prefix)
 ln -sf $BREW_PREFIX/Cellar/perl/*/bin/cpan-outdated /usr/local/bin/
 
 # Only update if there are things to update.
-PACKAGES=$(cpan-outdated)
-if [ -n "$PACKAGES" ]; then
+while IFS='' read -r line; do PACKAGES+=("$line"); done < <(cpan-outdated)
+if [ ${#PACKAGES[@]} ]; then
   set -x
-  # shellcheck disable=SC2086
-  cpanm $PACKAGES
+  cpanm "${PACKAGES[@]}"
 else
   echo Perl is up to date.
 fi
