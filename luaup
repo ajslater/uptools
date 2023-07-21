@@ -10,7 +10,7 @@ title() {
 
 title "lua"
 # shellcheck disable=SC2207
-OUTDATED=( $(luarocks list --outdated --porcelain | awk '{ print $1 }') )
+OUTDATED=( "$(luarocks list --outdated --porcelain | awk '{ print $1 }')" )
 if [[ ${#OUTDATED[@]} -gt 0  ]]; then
   luarocks install "${OUTDATED[@]}"
 fi
