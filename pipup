@@ -9,6 +9,7 @@ title() {
 }
 
 title "python3"
+pip3 install -U pip
 pip-review --auto
 
 # If only pip was as sophisticated as apt
