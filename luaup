@@ -5,12 +5,12 @@ set -euo pipefail
 BOLD=$(tput bold)
 NORMAL=$(tput sgr0)
 title() {
-  echo "${BOLD}Updating $*:${NORMAL}"
+    echo "${BOLD}Updating $*:${NORMAL}"
 }
 
 title "lua"
 # shellcheck disable=SC2207
-OUTDATED=( "$(luarocks list --outdated --porcelain | awk '{ print $1 }')" )
-if [[ ${#OUTDATED[@]} -gt 0  ]]; then
-  luarocks install "${OUTDATED[@]}"
+OUTDATED=("$(luarocks list --outdated --porcelain | awk '{ print $1 }')")
+if [[ ${#OUTDATED[@]} -gt 0 && -n ${OUTDATED[@]} ]]; then
+    luarocks install "${OUTDATED[@]}"
 fi
