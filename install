@@ -14,6 +14,7 @@ brew install rust python3 npm ruby rbenv luarocks perl cpanm
 cargo install cargo-update || true
 
 # python
+python3 -m venv --upgrade "$HOME"/.venv
 pip3 install pip-review
 
 # node
@@ -25,7 +26,7 @@ pip3 install pip-review
 # perl
 cpanm App::cpanoutdated
 # shellcheck disable=SC2086
-BREW_PREFX=$(brew --prefix)
+BREW_PREFIX=$(brew --prefix)
 ln -sf "$BREW_PREFIX"/Cellar/perl/*/bin/cpan-outdated /usr/local/bin/
 
 # this repo's custom scripts
