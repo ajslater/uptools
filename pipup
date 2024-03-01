@@ -5,16 +5,16 @@ set -euo pipefail
 BOLD=$(tput bold)
 NORMAL=$(tput sgr0)
 title() {
-  echo "${BOLD}Updating $*:${NORMAL}"
+    echo "${BOLD}Updating $*:${NORMAL}"
 }
 
-title "python3"
-pip3 install -U pip
+title python
+python3 -m venv --upgrade "$HOME"/.venv
+source "$HOME"/.venv/bin/activate
+pip install -Uq pip
+pip install -Uq pip-review
 pip-review --auto
 
 # If only pip was as sophisticated as apt
-echo "${BOLD}Fix poetry${NORMAL}"
-pip3 install -U poetry
-
-#title "python2"
-#pip-review2 --auto
+#echo "${BOLD}Fix poetry${NORMAL}"
+#pip3 install -U poetry
