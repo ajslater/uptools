@@ -14,7 +14,7 @@ brew install rust python3 npm ruby rbenv luarocks perl cpanm
 cargo install cargo-update || true
 
 # python
-python3 -m venv --upgrade "$HOME"/.venv
+python3 -m venv "$HOME"/.venv
 pip3 install pip-review
 
 # node
