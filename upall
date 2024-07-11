@@ -1,11 +1,17 @@
 #!/bin/bash
-# run all the update scripts
+# run all the update scripts nicely
 set -euo pipefail
 
-brewup
-rustup
-pipup
-nodeup
-gemup || true
-luaup
-perlup
+PRI=19
+
+run_nice() {
+    nice -n "$PRI" "$@"
+}
+
+run_nice brewup
+run_nice rustup
+run_nice pipup
+run_nice nodeup
+run_nice gemup || true
+run_nice luaup
+run_nice perlup
