@@ -1,10 +1,11 @@
 #!/bin/bash
 # update homebrew and casks
 set -euo pipefail
-
+export HOMEBREW_NO_ENV_HINTS=1
+export HOMEBREW_INSTALL_CLEANUP=1
 source uptitle
 
 title homebrew
-brew update
-HOMEBREW_INSTALL_CLEANUP=1 brew upgrade
+brew update --merge --auto-update
+brew upgrade --greedy
 brew cleanup
