@@ -14,7 +14,3 @@ source "$HOME"/.venv/bin/activate
 pip install -Uq pip
 pip install -Uq pip-review
 pip-review --auto
-
-# If only pip was as sophisticated as apt
-#echo "${BOLD}Fix poetry${NORMAL}"
-#pip3 install -U poetry
