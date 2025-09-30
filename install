@@ -2,9 +2,9 @@
 # install the update scripts
 set -eux
 if [ "${1:-}" = '-l' ]; then
-    target_cmd="ln -sf"
+  target_cmd="ln -sf"
 else
-    target_cmd="cp"
+  target_cmd="cp"
 fi
 
 # basics
@@ -25,9 +25,6 @@ pip3 install pip-review
 
 # perl
 cpanm App::cpanoutdated
-# shellcheck disable=SC2086
-BREW_PREFIX=$(brew --prefix)
-ln -sf "$BREW_PREFIX"/Cellar/perl/*/bin/cpan-outdated /usr/local/bin/
 
 # this repo's custom scripts
 "$target_cmd" "$PWD"/uptitle "$PWD"/brewup "$PWD"/upall "$PWD"/gemup "$PWD"/perlup "$PWD"/nodeup "$PWD"/rustup "$PWD"/pipup "$PWD"/luaup /usr/local/bin/
