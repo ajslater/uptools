@@ -7,9 +7,9 @@ source uptitle
 
 title homebrew
 brew update --merge --auto-update
-brew upgrade --greedy
+brew upgrade
 if ! which node; then
-    # Fix node unlinking all the time.
-    brew link --overwrite node
+  # Fix node unlinking all the time.
+  brew link --overwrite node
 fi
 brew cleanup
