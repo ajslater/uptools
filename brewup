@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # update homebrew and casks
 set -euo pipefail
 export HOMEBREW_NO_ENV_HINTS=1

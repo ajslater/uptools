@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # update ruby and its gems
 set -euo pipefail
 

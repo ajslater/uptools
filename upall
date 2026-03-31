@@ -1,11 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # run all the update scripts nicely
 set -euo pipefail
 
 PRI=19
 
 run_nice() {
-    nice -n "$PRI" "$@"
+  nice -n "$PRI" "$@"
 }
 
 run_nice brewup

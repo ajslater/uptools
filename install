@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # install the update scripts
 set -eux
 if [ "${1:-}" = '-l' ]; then
