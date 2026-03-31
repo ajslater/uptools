@@ -1,11 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Updates python packages
 set -euo pipefail
 
 BOLD=$(tput bold)
 NORMAL=$(tput sgr0)
 title() {
-    echo "${BOLD}Updating $*:${NORMAL}"
+  echo "${BOLD}Updating $*:${NORMAL}"
 }
 
 title python
@@ -13,4 +13,16 @@ python3 -m venv --upgrade "$HOME"/.venv
 source "$HOME"/.venv/bin/activate
 pip install -Uq pip
 pip install -Uq pip-review
+
+# If PyICU is outdated, set ICU build env and upgrade it before the bulk update.
+if pip-review | grep -q '^PyICU=='; then
+  title PyICU
+  brew install icu4c
+  env \
+    LDFLAGS="-L/opt/homebrew/opt/icu4c/lib" \
+    CPPFLAGS="-I/opt/homebrew/opt/icu4c/include" \
+    PKG_CONFIG_PATH="/opt/homebrew/opt/icu4c/lib/pkgconfig" \
+    pip install -U PyICU
+fi
+
 pip-review --auto
