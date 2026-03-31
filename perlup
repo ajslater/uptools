@@ -1,10 +1,40 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # update all perl packages
 set -uo pipefail
 
 source uptitle
 
 title perl
+
+BREW_PERL_PREFIX="$(brew --prefix perl)"
+BREW_PERL="${BREW_PERL_PREFIX}/bin/perl"
+CPAN_OUTDATED="$(command -v cpan-outdated || true)"
+
+# Ensure Homebrew's site_perl is in the module search path.
+# cpan-outdated ships with a `use lib` that can clobber @INC, and its
+# shebang may invoke system Perl.  PERL5LIB is respected by every perl
+# invocation regardless of shebang or use-lib tricks.
+PERL5LIB="${BREW_PERL_PREFIX}/lib/perl5/site_perl/5.42${PERL5LIB:+:$PERL5LIB}"
+export PERL5LIB
+
+# Ensure cpan-outdated is available.
+if [[ -z "$CPAN_OUTDATED" ]]; then
+  echo "App::cpanoutdated not found. Installing via cpanm..."
+  cpanm App::cpanoutdated
+  CPAN_OUTDATED="$(command -v cpan-outdated)"
+fi
+
+# If DB_File is among the outdated packages, export paths to berkeley-db so
+# the XS build can find the headers and library.
+if cpan-outdated | grep -q '^DB_File$'; then
+  echo "DB_File upgrade detected — configuring berkeley-db build paths..."
+  BERKELEY_PREFIX="$(brew --prefix berkeley-db)"
+  LIBRARY_PATH="${LIBRARY_PATH:-}:${BERKELEY_PREFIX}/lib"
+  export LIBRARY_PATH
+  CPATH="${CPATH:-}:${BERKELEY_PREFIX}/include"
+  export CPATH
+fi
+
 # cpan -u
-cpan-outdated | cpanm
-cpan-outdated -p | cpanm
+"$BREW_PERL" "$CPAN_OUTDATED" | cpanm
+"$BREW_PERL" "$CPAN_OUTDATED" -p | cpanm
