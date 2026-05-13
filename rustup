@@ -5,5 +5,8 @@ set -euo pipefail
 source uptitle
 
 title rust
-export DYLD_INSERT_LIBRARIES=/opt/homebrew/opt/curl/lib/libcurl.dylib
+DYLD_INSERT_LIBRARIES=/opt/homebrew/opt/curl/lib/libcurl.dylib
+if [ -f DYLD_INSERT_LIBRARIES ]; then
+  export DYLD_INSERT_LIBRARIES
+fi
 cargo install-update -a
