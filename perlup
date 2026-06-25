@@ -18,7 +18,7 @@ PERL5LIB="${BREW_PERL_PREFIX}/lib/perl5/site_perl/5.42${PERL5LIB:+:$PERL5LIB}"
 export PERL5LIB
 
 # Ensure cpan-outdated is available.
-if [[ -z "$CPAN_OUTDATED" ]]; then
+if [[ -z $CPAN_OUTDATED ]]; then
   echo "App::cpanoutdated not found. Installing via cpanm..."
   cpanm App::cpanoutdated
 fi
