@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# update title function
-set -euo pipefail
+# update title function, sourced by the update scripts
 
-BOLD=$(tput bold)
-NORMAL=$(tput sgr0)
+# tput fails without a terminal (e.g. under cron), so fall back to plain text.
+BOLD=$(tput bold 2>/dev/null || true)
+NORMAL=$(tput sgr0 2>/dev/null || true)
 title() {
   echo "${BOLD}Updating $*:${NORMAL}"
 }

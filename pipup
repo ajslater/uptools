@@ -2,27 +2,22 @@
 # Updates python packages
 set -euo pipefail
 
-BOLD=$(tput bold)
-NORMAL=$(tput sgr0)
-title() {
-  echo "${BOLD}Updating $*:${NORMAL}"
-}
+# shellcheck source=uptitle
+source "$(dirname "$0")/uptitle"
 
 title python
-python3 -m venv --upgrade "$HOME"/.venv
-source "$HOME"/.venv/bin/activate
-pip install -Uq pip
-pip install -Uq pip-review
+VENV="$HOME/.venv"
+# Relink the venv to the current python and refresh the updater.
+python3 -m venv --upgrade "$VENV"
+"$VENV/bin/pip" install -Uq pip pip-review
 
-# If PyICU is outdated, set ICU build env and upgrade it before the bulk update.
-if pip-review | grep -q '^PyICU=='; then
-  title PyICU
-  brew install icu4c
-  env \
-    LDFLAGS="-L/opt/homebrew/opt/icu4c/lib" \
-    CPPFLAGS="-I/opt/homebrew/opt/icu4c/include" \
-    PKG_CONFIG_PATH="/opt/homebrew/opt/icu4c/lib/pkgconfig" \
-    pip install -U PyICU
+# PyICU builds from source against homebrew's icu4c.
+if "$VENV/bin/pip" show PyICU &>/dev/null; then
+  ICU_PREFIX="$(brew --prefix)/opt/icu4c"
+  [[ -d $ICU_PREFIX ]] || brew install icu4c
+  export LDFLAGS="-L$ICU_PREFIX/lib"
+  export CPPFLAGS="-I$ICU_PREFIX/include"
+  export PKG_CONFIG_PATH="$ICU_PREFIX/lib/pkgconfig"
 fi
 
-pip-review --auto
+"$VENV/bin/pip-review" --auto

@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
-# update ruby and its gems
+# update ruby gems
 set -euo pipefail
 
-source uptitle
+# shellcheck source=uptitle
+source "$(dirname "$0")/uptitle"
 
 title ruby
-gem update --system | grep -v "Latest version already installed. Done."
-gem update | grep -v "Updating installed gems"
+# grep -v exits 1 when it filters out every line, which pipefail would report
+# as a failure, so only gem's own exit status may fail the pipeline.
+gem update --system | { grep -v "Latest version already installed. Done." || true; }
+gem update | { grep -v "Updating installed gems" || true; }

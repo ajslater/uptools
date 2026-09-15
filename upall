@@ -12,6 +12,6 @@ run_nice brewup
 run_nice rustup
 run_nice pipup
 run_nice nodeup
-run_nice gemup || true
+run_nice gemup
 run_nice luaup
 run_nice perlup

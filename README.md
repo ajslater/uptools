@@ -1,6 +1,6 @@
 # uptools
-Scripts for updating packages for homebrew, python, node, ruby & perl.
-pipup and perlup are cross platform. The others are macOS & homebrew specific.
+Scripts for updating packages for homebrew, rust, python, bun, ruby, lua & perl.
+All scripts are macOS & homebrew specific.
 
 ## brewup
 Update, upgrade and cleanup homebrew packages.
@@ -12,7 +12,7 @@ Update rust cargo
 Update python3 packages
 
 ## nodeup
-Update npm packages
+Update bun's global node packages
 
 ## gemup
 Updates ruby gem updater and gems
@@ -24,12 +24,11 @@ Updates lua rocks
 Updates perl packages with cpanminus and cpan-outdated
 
 ## upall
-Update homebrew, python, npm, ruby and perl at once.
-Depends on brewup, pip-review, npm, gem and perlup
+Update homebrew, rust, python, bun, ruby, lua and perl at once.
+Runs brewup, rustup, pipup, nodeup, gemup, luaup and perlup.
 
 ## install
-Install homebrew versions of python, npm, ruby and perl as well as tools for updating python and perl. Copy or symlink the updater scripts to /usr/local/bin/
-Creates the script pip-review2 as a python2 version of pip-review
+Install homebrew versions of rust, python, node, bun, ruby, lua and perl as well as tools for updating rust, python and perl. Copy or symlink the updater scripts to /usr/local/bin/
 Optionally installs symlinks to this cloned directory with -l parameter
 
 ```sh

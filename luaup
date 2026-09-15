@@ -2,15 +2,12 @@
 # Updates lua rocks
 set -euo pipefail
 
-BOLD=$(tput bold)
-NORMAL=$(tput sgr0)
-title() {
-  echo "${BOLD}Updating $*:${NORMAL}"
-}
+# shellcheck source=uptitle
+source "$(dirname "$0")/uptitle"
 
-title "lua"
-# shellcheck disable=SC2207
-OUTDATED=("$(luarocks list --outdated --porcelain | awk '{ print $1 }')")
-if [[ ${#OUTDATED[@]} -gt 0 && -n ${OUTDATED[@]} ]]; then
-  luarocks install "${OUTDATED[@]}"
-fi
+title lua
+# luarocks install accepts a single rock, so upgrade outdated rocks one at a time.
+luarocks list --outdated --porcelain | awk '{ print $1 }' |
+  while read -r rock; do
+    luarocks install "$rock"
+  done

@@ -2,39 +2,37 @@
 # update all perl packages
 set -uo pipefail
 
-source uptitle
+# shellcheck source=uptitle
+source "$(dirname "$0")/uptitle"
 
 title perl
 
+# Run every perl tool with homebrew's perl explicitly: their shebangs may point
+# at system perl, and homebrew perl's own site_perl is already in its @INC.
 BREW_PERL_PREFIX="$(brew --prefix perl)"
 BREW_PERL="${BREW_PERL_PREFIX}/bin/perl"
-CPAN_OUTDATED="$(command -v cpan-outdated || true)"
+CPANM=("$BREW_PERL" "$(command -v cpanm)")
+CPAN_OUTDATED=("$BREW_PERL" "${BREW_PERL_PREFIX}/bin/cpan-outdated")
 
-# Ensure Homebrew's site_perl is in the module search path.
-# cpan-outdated ships with a `use lib` that can clobber @INC, and its
-# shebang may invoke system Perl.  PERL5LIB is respected by every perl
-# invocation regardless of shebang or use-lib tricks.
-PERL5LIB="${BREW_PERL_PREFIX}/lib/perl5/site_perl/5.42${PERL5LIB:+:$PERL5LIB}"
-export PERL5LIB
-
-# Ensure cpan-outdated is available.
-if [[ -z $CPAN_OUTDATED ]]; then
+# Homebrew keeps CPAN modules inside perl's Cellar, so upgrading perl discards
+# them along with cpan-outdated. Look for it there rather than on PATH, where a
+# stale copy built for another perl may linger.
+if [[ ! -x ${CPAN_OUTDATED[1]} ]]; then
   echo "App::cpanoutdated not found. Installing via cpanm..."
-  cpanm App::cpanoutdated
+  "${CPANM[@]}" App::cpanoutdated
 fi
-CPAN_OUTDATED_CMD=("$BREW_PERL" "$(command -v cpan-outdated)")
+
+# Fetch the CPAN index once. -p prints package names, which cpanm accepts.
+OUTDATED="$("${CPAN_OUTDATED[@]}" -p)"
 
 # If DB_File is among the outdated packages, export paths to berkeley-db so
 # the XS build can find the headers and library.
-if "${CPAN_OUTDATED_CMD[@]}" | grep -q '^DB_File$'; then
+if grep -qx DB_File <<<"$OUTDATED"; then
   echo "DB_File upgrade detected — configuring berkeley-db build paths..."
   BERKELEY_PREFIX="$(brew --prefix berkeley-db)"
-  LIBRARY_PATH="${LIBRARY_PATH:-}:${BERKELEY_PREFIX}/lib"
-  export LIBRARY_PATH
-  CPATH="${CPATH:-}:${BERKELEY_PREFIX}/include"
-  export CPATH
+  export LIBRARY_PATH="${LIBRARY_PATH:+$LIBRARY_PATH:}${BERKELEY_PREFIX}/lib"
+  export CPATH="${CPATH:+$CPATH:}${BERKELEY_PREFIX}/include"
 fi
 
 # cpan -u
-"${CPAN_OUTDATED_CMD[@]}" | cpanm
-"${CPAN_OUTDATED_CMD[@]}" -p | cpanm
+"${CPANM[@]}" <<<"$OUTDATED"

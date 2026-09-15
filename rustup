@@ -2,11 +2,13 @@
 # update rust cargo
 set -euo pipefail
 
-source uptitle
+# shellcheck source=uptitle
+source "$(dirname "$0")/uptitle"
 
 title rust
-DYLD_INSERT_LIBRARIES=/opt/homebrew/opt/curl/lib/libcurl.dylib
-if [ -f DYLD_INSERT_LIBRARIES ]; then
+# Use homebrew's libcurl instead of the system one when it is installed.
+DYLD_INSERT_LIBRARIES="$(brew --prefix)/opt/curl/lib/libcurl.dylib"
+if [ -f "$DYLD_INSERT_LIBRARIES" ]; then
   export DYLD_INSERT_LIBRARIES
 fi
 cargo install-update -a

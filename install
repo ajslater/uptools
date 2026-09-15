@@ -2,23 +2,29 @@
 # install the update scripts
 set -eux
 if [ "${1:-}" = '-l' ]; then
-  target_cmd="ln -sf"
+  install_cmd=(ln -sf)
 else
-  target_cmd="cp"
+  install_cmd=(cp)
 fi
 
 # the scripts this repo installs
+SRC_DIR="$(cd "$(dirname "$0")" && pwd)"
 SCRIPTS=(uptitle brewup upall gemup perlup nodeup rustup pipup luaup)
 
 # basics
-brew install rust python3 npm ruby rbenv luarocks perl cpanm
+brew install rust python3 node bun ruby rbenv luarocks perl cpanm
 
 # rust
-cargo install cargo-update || true
+command -v cargo-install-update >/dev/null || cargo install cargo-update
 
 # python
 VENV_DIR="$HOME"/.venv
-python3 -m venv --upgrade --upgrade-deps "$VENV_DIR"
+if [ -d "$VENV_DIR" ]; then
+  # --upgrade only relinks an existing venv; a new one needs full creation.
+  python3 -m venv --upgrade --upgrade-deps "$VENV_DIR"
+else
+  python3 -m venv --upgrade-deps "$VENV_DIR"
+fi
 "$VENV_DIR"/bin/pip install -U pip-review
 
 # node
@@ -28,11 +34,11 @@ python3 -m venv --upgrade --upgrade-deps "$VENV_DIR"
 # n/a
 
 # perl
-cpanm App::cpanoutdated
+"$(brew --prefix perl)/bin/perl" "$(command -v cpanm)" App::cpanoutdated
 
 # this repo's custom scripts
 DEST_DIR=/usr/local/bin
 for script in "${SCRIPTS[@]}"; do
   rm -f "$DEST_DIR/$script"
-  $target_cmd "$PWD/$script" "$DEST_DIR/$script"
+  "${install_cmd[@]}" "$SRC_DIR/$script" "$DEST_DIR/$script"
 done

@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# update node and its packages
+# update bun's global node packages
 set -euo pipefail
 
-source uptitle
+# shellcheck source=uptitle
+source "$(dirname "$0")/uptitle"
 
 title node
-bun -g update
+bun update -g
