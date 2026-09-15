@@ -12,6 +12,7 @@ SRC_DIR="$(cd "$(dirname "$0")" && pwd)"
 SCRIPTS=(uptitle brewup upall gemup perlup nodeup rustup pipup luaup)
 
 # basics
+sudo xcode-select -s /Library/Developer/CommandLineTools
 brew install rust python3 node bun ruby rbenv luarocks perl cpanm
 
 # rust
