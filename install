@@ -7,6 +7,9 @@ else
   target_cmd="cp"
 fi
 
+# the scripts this repo installs
+SCRIPTS=(uptitle brewup upall gemup perlup nodeup rustup pipup luaup)
+
 # basics
 brew install rust python3 npm ruby rbenv luarocks perl cpanm
 
@@ -14,8 +17,9 @@ brew install rust python3 npm ruby rbenv luarocks perl cpanm
 cargo install cargo-update || true
 
 # python
-python3 -m venv "$HOME"/.venv
-pip3 install pip-review
+VENV_DIR="$HOME"/.venv
+python3 -m venv --upgrade --upgrade-deps "$VENV_DIR"
+"$VENV_DIR"/bin/pip install -U pip-review
 
 # node
 # n/a
@@ -27,4 +31,8 @@ pip3 install pip-review
 cpanm App::cpanoutdated
 
 # this repo's custom scripts
-"$target_cmd" "$PWD"/uptitle "$PWD"/brewup "$PWD"/upall "$PWD"/gemup "$PWD"/perlup "$PWD"/nodeup "$PWD"/rustup "$PWD"/pipup "$PWD"/luaup /usr/local/bin/
+DEST_DIR=/usr/local/bin
+for script in "${SCRIPTS[@]}"; do
+  rm -f "$DEST_DIR/$script"
+  $target_cmd "$PWD/$script" "$DEST_DIR/$script"
+done
