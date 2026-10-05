@@ -9,4 +9,19 @@ title ruby
 # grep -v exits 1 when it filters out every line, which pipefail would report
 # as a failure, so only gem's own exit status may fail the pipeline.
 gem update --system | { grep -v "Latest version already installed. Done." || true; }
-gem update | { grep -v "Updating installed gems" || true; }
+
+# A bare `gem update` also upgrades the default and bundled gems that ship with
+# ruby. That leaves a second copy of each beside the original, and rubygems then
+# loads both ("already initialized constant" warnings on every gem command).
+# Those belong to the ruby install, so only update gems installed on top of it.
+mapfile -t gems < <(ruby -e '
+  ruby_dir = File.join(RbConfig::CONFIG["rubylibprefix"], "gems", RbConfig::CONFIG["ruby_version"])
+  shipped = Dir[File.join(ruby_dir, "specifications", "{,default/}*.gemspec")]
+    .filter_map { |f| Gem::Specification.load(f)&.name }
+  puts Gem::Specification.map(&:name).uniq - shipped
+')
+if ((${#gems[@]})); then
+  gem update "${gems[@]}" | { grep -v "Updating installed gems" || true; }
+else
+  echo "Nothing to update"
+fi
