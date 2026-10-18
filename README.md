@@ -15,7 +15,10 @@ Update python3 packages
 Update bun's global node packages
 
 ## gemup
-Updates ruby gem updater and gems
+Updates rubygems and the gems installed on top of homebrew's ruby. The gems that ship with ruby are left to homebrew.
+
+## gemprune
+Removes copies of the gems that ship with ruby that an old `gem update` installed beside them, plus leftovers of failed installs and extensions built for a previous macOS. Run by hand, `-n` only lists.
 
 ## luaup
 Updates lua rocks

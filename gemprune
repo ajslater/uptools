@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+# remove copies of ruby's own gems that `gem update` installed beside them
+#
+# A bare `gem update` (what gemup did before it learned better) installs newer
+# versions of the default and bundled gems next to the ones that ship with
+# ruby. They are redundant, every gem command then loads both rdoc plugins
+# ("already initialized constant" warnings), and their native extensions go
+# stale when homebrew rebuilds ruby for a new macOS ("Ignoring ... because its
+# extensions are not built"). This removes them, along with superseded
+# rubygems-update gems, gem dirs and cached .gems left behind by failed
+# installs, and extension builds for platforms this ruby no longer reports.
+# A copy that a gem installed on top of ruby still needs is kept and reported.
+#
+# usage: gemprune [-n]    -n only lists what would be removed
+set -euo pipefail
+
+# -W0: with the duplicates present, ruby would warn about them on every load.
+ruby -W0 - "$@" <<'EOF'
+require "fileutils"
+require "rubygems/uninstaller"
+
+dry = ARGV.delete("-n")
+abort "usage: gemprune [-n]" unless ARGV.empty?
+verb = dry ? "would remove" : "removing"
+
+ruby_dir = File.realpath(File.join(RbConfig::CONFIG["rubylibprefix"], "gems", RbConfig::CONFIG["ruby_version"]))
+shipped = Dir[File.join(ruby_dir, "specifications", "{,default/}*.gemspec")]
+  .filter_map { |f| Gem::Specification.load(f) }.to_h { |s| [s.name, s.version] }
+# A gem installed on top of ruby may need a newer copy of a shipped gem.
+needed = Gem::Specification.reject { |s| shipped.key?(s.name) }
+  .flat_map { |s| s.runtime_dependencies.map { |d| [s.name, d] } }
+  .select { |_, d| shipped.key?(d.name) && !d.requirement.satisfied_by?(shipped[d.name]) }
+
+failed = false
+dirs = Gem.path.filter_map { |d| File.realpath(d) if File.directory?(d) }.uniq - [ruby_dir]
+dirs.each do |dir|
+  puts "#{dir}:"
+  Dir[File.join(dir, "specifications", "*.gemspec")].filter_map { |f| Gem::Specification.load(f) }.each do |s|
+    why =
+      if shipped.key?(s.name) && s.version != shipped[s.name]
+        "ruby ships #{shipped[s.name]}"
+      elsif shipped.key?(s.name) && s.missing_extensions?
+        "unbuilt copy of the version ruby ships"
+      elsif s.name == "rubygems-update" && s.version != Gem.rubygems_version
+        "superseded by #{Gem.rubygems_version}"
+      end
+    next unless why
+    if (by, dep = needed.find { |_, d| d.name == s.name && d.requirement.satisfied_by?(s.version) })
+      puts "  keeping #{s.full_name}: #{by} needs #{dep}"
+      next
+    end
+    puts "  #{verb} #{s.full_name} (#{why})"
+    next if dry
+    begin
+      Gem::Uninstaller.new(s.name, version: s.version.to_s, install_dir: dir,
+                           executables: false, ignore: true).uninstall
+      # the uninstaller leaves generated docs (the rdoc plugin removes them for
+      # the gem command) and, for a copy of a default gem, the gem dir itself
+      FileUtils.rm_rf([s.full_gem_path, File.join(dir, "doc", s.full_name)])
+    rescue Gem::Exception, SystemCallError => e
+      puts "  failed: #{e.message}"
+      failed = true
+    end
+  end
+
+  # Gem dirs and cached .gems without a gemspec are leftovers of failed
+  # installs. Symlinks are homebrew's mirrors of the bundled gems.
+  spec_for = ->(name) { Dir[File.join(dir, "specifications", "{,default/}#{name}.gemspec")].any? }
+  Dir[File.join(dir, "gems", "*")].each do |g|
+    next if File.symlink?(g) || spec_for.(File.basename(g))
+    puts "  #{verb} #{g} (no gemspec)"
+    FileUtils.rm_rf(g) unless dry
+  end
+  Dir[File.join(dir, "cache", "*.gem")].each do |c|
+    next if File.symlink?(c) || spec_for.(File.basename(c, ".gem"))
+    puts "  #{verb} #{c} (no gemspec)"
+    FileUtils.rm_f(c) unless dry
+  end
+  # Extensions are looked up under the current platform only, so builds for
+  # the platform of a previous macOS can never be loaded again.
+  Dir[File.join(dir, "extensions", "*")].each do |p|
+    next if File.basename(p) == Gem::Platform.local.to_s
+    puts "  #{verb} #{p} (built for another platform)"
+    FileUtils.rm_rf(p) unless dry
+  end
+end
+exit 1 if failed
+EOF

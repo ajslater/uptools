@@ -9,7 +9,7 @@ fi
 
 # the scripts this repo installs
 SRC_DIR="$(cd "$(dirname "$0")" && pwd)"
-SCRIPTS=(uptitle brewup upall gemup perlup nodeup rustup pipup luaup)
+SCRIPTS=(uptitle brewup upall gemup gemprune perlup nodeup rustup pipup luaup)
 
 # basics
 sudo xcode-select -s /Library/Developer/CommandLineTools
