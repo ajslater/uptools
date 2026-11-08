@@ -1,0 +1,338 @@
+#!/usr/bin/env bash
+# leaf pruning driver, sourced by the *prune scripts
+#
+# A leaf is an installed package that no other installed package depends on.
+# The update scripts only ever add packages, so leaves pile up: tools tried once
+# and forgotten. A pruner lists its package manager's leaves, this driver asks
+# about each one, removes the chosen ones and then deals with the leaves that
+# removal reveals: those the package manager knows were only ever installed as
+# dependencies go automatically (what `brew autoremove` does), the rest are
+# asked about. Kept names are remembered per package manager in
+# $XDG_CONFIG_HOME/uptools/<group>.keep, so the next run only asks about new
+# leaves; -p reviews that list.
+#
+# A pruner sets PRUNE_WHAT (for messages), PRUNE_KEEP (the keep file's name)
+# and ALWAYS_KEEP (names it must never remove), defines
+#   leaves          print one leaf per line as name<TAB>why<TAB>summary,
+#                   why being requested, dependency or unknown
+#   remove NAME...  uninstall; PRUNE_ASK_ALL is set when -a wants orphaned
+#                   dependencies left for the driver to ask about
+# and optionally
+#   installed       print the name of every installed package (for -p)
+#   info NAME       show details for the i answer
+#   protect NAME... tell the package manager a kept dependency is wanted
+# then calls `prune_main "$@"`. A script may do that more than once, redefining
+# the functions in between, to prune a second group (brew casks).
+#
+# usage: <pm>prune [-n] [-a|-y] [-p]
+#   -n  list the leaves and exit    -p  review the protected names first
+#   -a  ask about every revealed leaf, -y  remove every revealed leaf
+
+# shellcheck source=uptitle
+source "$(dirname "${BASH_SOURCE[0]}")/uptitle"
+
+prune_usage() {
+  echo "usage: $(basename "$0") [-n] [-a|-y] [-p]" >&2
+  exit 2
+}
+
+# The helpers work on prune_main's local arrays, which bash's dynamic scoping
+# makes visible to the functions it calls: why and summary by name, protected
+# and builtin as sets, before/after as the leaves around a removal, chosen and
+# kept as the answers given so far.
+
+# print the names in the keep file, in order, without comments
+prune_keep_names() {
+  local line name
+  [[ -f $keep_file ]] || return 0
+  while IFS= read -r line; do
+    name=${line%%#*}
+    name=${name//[[:space:]]/}
+    [[ $name ]] && echo "$name"
+  done <"$keep_file"
+  return 0
+}
+
+# read the pruner's leaves into the array named $1, recording why and summary
+prune_leaves() {
+  local -n out=$1
+  local text name w s
+  text=$(leaves)
+  out=()
+  while IFS=$'\t' read -r name w s; do
+    [[ $name ]] || continue
+    out+=("$name")
+    why[$name]=${w:-unknown}
+    summary[$name]=$s
+  done <<<"$text"
+}
+
+prune_info() {
+  if declare -F info >/dev/null; then
+    info "$1"
+  else
+    echo "  (no details available)"
+  fi
+}
+
+prune_quit() {
+  prune_keep
+  echo "Quit"
+  exit 0
+}
+
+# ask about each name in the array named $1, adding it to chosen or kept
+prune_ask() {
+  local -n names=$1
+  local name ans rest=''
+  for name in "${names[@]}"; do
+    if [[ $rest ]]; then
+      kept+=("$name")
+      continue
+    fi
+    echo "$name (${why[$name]})${summary[$name]:+: ${summary[$name]}}"
+    while :; do
+      read -r -p "  [k]eep [r]emove [s]kip [i]nfo [K]eep all [q]uit: " ans || ans=q
+      case $ans in
+      '' | k | keep)
+        kept+=("$name")
+        break
+        ;;
+      r | remove)
+        chosen+=("$name")
+        break
+        ;;
+      s | skip) break ;;
+      i | info) prune_info "$name" ;;
+      K | all)
+        kept+=("$name")
+        rest=1
+        break
+        ;;
+      q | quit) prune_quit ;;
+      *) echo "  k, r, s, i, K or q" ;;
+      esac
+    done
+  done
+}
+
+# remember the kept names and tell the package manager about kept dependencies
+prune_keep() {
+  local name
+  local -a deps=()
+  for name in "${kept[@]}"; do
+    [[ ${protected[$name]:-} ]] && continue
+    protected[$name]=1
+    mkdir -p "$(dirname "$keep_file")"
+    echo "$name" >>"$keep_file"
+    if [[ ${why[$name]:-} == dependency ]]; then
+      deps+=("$name")
+    fi
+  done
+  kept=()
+  if ((${#deps[@]})) && declare -F protect >/dev/null; then
+    protect "${deps[@]}"
+  fi
+}
+
+# remove the automatic and the chosen names
+prune_remove() {
+  local name
+  for name in "${auto[@]}"; do
+    echo "removing $name (only installed as a dependency)"
+  done
+  for name in "${chosen[@]}"; do
+    echo "removing $name"
+  done
+  remove "${auto[@]}" "${chosen[@]}" </dev/null
+  auto=() chosen=()
+}
+
+# -n: the current leaves, marking the protected ones
+prune_list() {
+  local name mark
+  for name in "${before[@]}"; do
+    if [[ ${builtin[$name]:-} ]]; then
+      mark=built-in
+    elif [[ ${protected[$name]:-} ]]; then
+      mark=kept
+    else
+      mark=''
+    fi
+    printf '  %-28s %-10s %-8s %s\n' "$name" "${why[$name]}" "$mark" "${summary[$name]}"
+  done
+}
+
+# -p: walk the keep file, releasing or removing names; drops what is gone
+prune_review() {
+  local -a names=()
+  local -A is_leaf=() is_installed=() release=()
+  local name ans status text line have_installed=''
+  mapfile -t names < <(prune_keep_names)
+  if ((${#builtin[@]})); then
+    echo "built-in: $(printf '%s\n' "${!builtin[@]}" | sort | paste -sd ' ' -)"
+  fi
+  if ((${#names[@]} == 0)); then
+    echo "No protected names in $keep_file"
+    return 0
+  fi
+  for name in "${before[@]}"; do
+    is_leaf[$name]=1
+  done
+  if declare -F installed >/dev/null; then
+    have_installed=1
+    text=$(installed)
+    while read -r name; do
+      [[ $name ]] && is_installed[$name]=1
+    done <<<"$text"
+  fi
+  echo "Protected ($keep_file):"
+  for name in "${names[@]}"; do
+    if [[ ${is_leaf[$name]:-} ]]; then
+      status=leaf
+    elif [[ $have_installed && ! ${is_installed[$name]:-} ]]; then
+      status="not installed"
+    elif [[ $have_installed ]]; then
+      status="not a leaf"
+    else
+      status=''
+    fi
+    if [[ $list_only ]]; then
+      printf '  %-28s %-13s %s\n' "$name" "$status" "${summary[$name]:-}"
+      continue
+    fi
+    if [[ $status == "not installed" ]]; then
+      echo "  dropping $name (not installed)"
+      release[$name]=1
+      unset "protected[$name]"
+      continue
+    fi
+    echo "$name${status:+ ($status)}${summary[$name]:+: ${summary[$name]}}"
+    while :; do
+      read -r -p "  [k]eep protected [u]nprotect [r]emove [i]nfo [q]uit: " ans || ans=q
+      case $ans in
+      '' | k | keep) break ;;
+      u | unprotect)
+        release[$name]=1
+        unset "protected[$name]"
+        break
+        ;;
+      r | remove)
+        if [[ ${is_leaf[$name]:-} ]]; then
+          release[$name]=1
+          unset "protected[$name]"
+          chosen+=("$name")
+          break
+        fi
+        echo "  not a leaf, something still depends on it"
+        ;;
+      i | info) prune_info "$name" ;;
+      q | quit) prune_quit ;;
+      *) echo "  k, u, r, i or q" ;;
+      esac
+    done
+  done
+  ((${#release[@]})) || return 0
+  # rewrite the file without the released names, keeping its comments
+  text=''
+  while IFS= read -r line; do
+    name=${line%%#*}
+    name=${name//[[:space:]]/}
+    [[ $name && ${release[$name]:-} ]] && continue
+    text+=$line$'\n'
+  done <"$keep_file"
+  printf '%s' "$text" >"$keep_file"
+}
+
+prune_main() {
+  local opt list_only='' yes_all='' review=''
+  PRUNE_ASK_ALL=''
+  OPTIND=1
+  while getopts :nayp opt; do
+    case $opt in
+    n) list_only=1 ;;
+    a) PRUNE_ASK_ALL=1 ;;
+    y) yes_all=1 ;;
+    p) review=1 ;;
+    *) prune_usage ;;
+    esac
+  done
+  shift $((OPTIND - 1))
+  (($# == 0)) || prune_usage
+  [[ $PRUNE_ASK_ALL && $yes_all ]] && prune_usage
+
+  local keep_file="${XDG_CONFIG_HOME:-$HOME/.config}/uptools/$PRUNE_KEEP.keep"
+  local -A protected=() builtin=() why=() summary=() seen=()
+  local -a before=() after=() new=() candidates=() chosen=() kept=() auto=() ask=()
+  local name count
+
+  for name in "${ALWAYS_KEEP[@]}"; do
+    protected[$name]=1
+    builtin[$name]=1
+  done
+  while read -r name; do
+    protected[$name]=1
+  done < <(prune_keep_names)
+
+  echo "${BOLD}Pruning $PRUNE_WHAT:${NORMAL}"
+  prune_leaves before
+  if [[ $review ]]; then
+    prune_review
+  fi
+  if [[ $list_only ]]; then
+    echo "${#before[@]} leaves:"
+    prune_list
+    return 0
+  fi
+  count=$(prune_keep_names | wc -l | tr -d ' ')
+  echo "$count protected in $keep_file (-p reviews them)"
+
+  for name in "${chosen[@]}"; do
+    seen[$name]=1
+  done
+  for name in "${before[@]}"; do
+    [[ ${protected[$name]:-} || ${seen[$name]:-} ]] && continue
+    candidates+=("$name")
+  done
+  if ((${#candidates[@]} == 0 && ${#chosen[@]} == 0)); then
+    echo "No new leaves"
+    return 0
+  fi
+  prune_ask candidates
+  prune_keep
+  if ((${#chosen[@]} == 0)); then
+    echo "Nothing to remove"
+    return 0
+  fi
+  prune_remove
+
+  # Removal reveals the leaves that only the removed packages needed.
+  while :; do
+    prune_leaves after
+    seen=()
+    for name in "${before[@]}"; do
+      seen[$name]=1
+    done
+    new=()
+    for name in "${after[@]}"; do
+      [[ ${seen[$name]:-} || ${protected[$name]:-} ]] || new+=("$name")
+    done
+    before=("${after[@]}")
+    ((${#new[@]})) || break
+    auto=() ask=()
+    for name in "${new[@]}"; do
+      if [[ $yes_all || (${why[$name]} == dependency && ! $PRUNE_ASK_ALL) ]]; then
+        auto+=("$name")
+      else
+        ask+=("$name")
+      fi
+    done
+    if ((${#ask[@]})); then
+      echo "Removing those revealed new leaves to ask about:"
+      prune_ask ask
+      prune_keep
+    fi
+    ((${#auto[@]} + ${#chosen[@]})) || break
+    prune_remove
+  done
+}

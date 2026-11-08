@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# prune go binaries
+#
+# `go install` drops a binary in GOBIN and keeps no other record of it, but
+# the binary carries its module information, which `go version -m` reads
+# back. Every binary is a leaf, none depends on another, and go has no
+# uninstall: removing one is deleting the file.
+#
+# usage: goprune [-n] [-a|-y] [-p]    see prunelib for the flags
+set -euo pipefail
+
+# shellcheck source=prunelib
+source "$(dirname "$0")/prunelib"
+
+bin=$(go env GOBIN)
+[[ $bin ]] || bin=$(go env GOPATH)/bin
+
+# the regular executable files in GOBIN
+installed() {
+  local path
+  for path in "$bin"/*; do
+    [[ -f $path && -x $path ]] || continue
+    basename "$path"
+  done
+}
+# summary: the main module and its version, or the package path
+leaves() {
+  local name text
+  text=$(installed)
+  [[ $text ]] || return 0
+  while read -r name; do
+    printf '%s\trequested\t%s\n' "$name" \
+      "$(go version -m "$bin/$name" | awk '$1 == "path" {p = $2} $1 == "mod" {p = $2 "@" $3; exit} END {print p}')"
+  done <<<"$text"
+}
+remove() { (cd "$bin" && rm -f -- "$@"); }
+info() { go version -m "$bin/$1"; }
+PRUNE_WHAT="go binaries"
+PRUNE_KEEP=go
+ALWAYS_KEEP=()
+prune_main "$@"

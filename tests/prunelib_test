@@ -1,0 +1,208 @@
+#!/usr/bin/env bash
+# test prunelib's selection and recursion logic against a fake package manager
+#
+# The fake manager keeps its installed packages in a file, one per line as
+# name, why, comma separated dependencies (- for none) and summary. Answers to
+# the prompts are fed on stdin.
+set -uo pipefail
+cd "$(dirname "$0")/.." || exit 1
+# shellcheck source=prunelib
+source ./prunelib
+
+TMP=$(mktemp -d)
+trap 'rm -rf "$TMP"' EXIT
+export XDG_CONFIG_HOME=$TMP/config
+GRAPH=$TMP/installed
+REMOVED=$TMP/removed
+PROTECTED=$TMP/protected
+OUT=$TMP/out
+KEEP=$XDG_CONFIG_HOME/uptools/fake.keep
+PRUNE_WHAT="fake packages"
+PRUNE_KEEP=fake
+ALWAYS_KEEP=()
+
+reset() {
+  cat >"$GRAPH" <<'EOF'
+app1	requested	lib1,lib2	App one
+app2	requested	lib2,lib3	App two
+lib1	dependency	-	Lib one
+lib2	dependency	-	Lib two
+lib3	requested	-	Lib three
+tool	requested	-	Standalone tool
+EOF
+  : >"$REMOVED"
+  : >"$PROTECTED"
+  rm -f "$KEEP"
+  mkdir -p "$(dirname "$KEEP")"
+  ALWAYS_KEEP=()
+}
+
+# the fake package manager
+leaves() {
+  local -A needed=()
+  local -a deplist=()
+  local name why deps summary dep
+  while IFS=$'\t' read -r name why deps summary; do
+    [[ $deps == - ]] && continue
+    IFS=, read -ra deplist <<<"$deps"
+    for dep in "${deplist[@]}"; do
+      needed[$dep]=1
+    done
+  done <"$GRAPH"
+  while IFS=$'\t' read -r name why deps summary; do
+    [[ ${needed[$name]:-} ]] || printf '%s\t%s\t%s\n' "$name" "$why" "$summary"
+  done <"$GRAPH"
+}
+remove() {
+  local name
+  for name; do
+    grep -v "^$name	" "$GRAPH" >"$GRAPH.new"
+    mv "$GRAPH.new" "$GRAPH"
+    echo "$name" >>"$REMOVED"
+  done
+}
+installed() { cut -f1 "$GRAPH"; }
+protect() { printf '%s\n' "$@" >>"$PROTECTED"; }
+info() { echo "  info for $1"; }
+
+# run FLAGS ANSWER... : run prune_main with the answers on stdin, output in $OUT
+run() {
+  local -a flags=()
+  read -ra flags <<<"$1"
+  shift
+  if (($#)); then
+    printf '%s\n' "$@" | (prune_main "${flags[@]}") >"$OUT" 2>&1
+  else
+    (prune_main "${flags[@]}") </dev/null >"$OUT" 2>&1
+  fi
+  local status=$?
+  if ((status != 0)); then
+    echo "FAIL prune_main ${flags[*]} exited $status"
+    cat "$OUT"
+    fails=$((fails + 1))
+  fi
+}
+
+fails=0
+check() { # check DESCRIPTION COMMAND...
+  if "${@:2}"; then
+    echo "ok   $1"
+  else
+    echo "FAIL $1"
+    fails=$((fails + 1))
+  fi
+}
+eq() { # eq EXPECTED ACTUAL
+  [[ $1 == "$2" ]] && return 0
+  echo "     expected: $1"
+  echo "     got:      $2"
+  return 1
+}
+absent() { ! grep -q "$@"; }
+removed() { tr '\n' ' ' <"$REMOVED" | sed 's/ $//'; }
+kept() { [[ -f $KEEP ]] && tr '\n' ' ' <"$KEEP" | sed 's/ $//'; }
+
+echo "# the default answer keeps"
+reset
+run "" "" "" ""
+check "nothing removed" eq "" "$(removed)"
+check "every leaf protected" eq "app1 app2 tool" "$(kept)"
+check "keep file is reported" grep -q "0 protected in $KEEP" "$OUT"
+
+echo "# removing a leaf removes the dependency it orphans"
+reset
+run "" r "" ""
+check "app1 and lib1 removed" eq "app1 lib1" "$(removed)"
+check "lib2 is still needed" grep -q '^lib2' "$GRAPH"
+check "the others protected" eq "app2 tool" "$(kept)"
+check "says why" grep -q 'removing lib1 (only installed as a dependency)' "$OUT"
+
+echo "# a revealed requested leaf is asked about"
+reset
+run "" r r "" r
+check "removed when answered r" eq "app1 app2 lib1 lib2 lib3" "$(removed)"
+reset
+run "" r r "" k
+check "kept when answered k" eq "app1 app2 lib1 lib2" "$(removed)"
+check "revealed leaf protected" eq "tool lib3" "$(kept)"
+
+echo "# -a asks about revealed dependencies too"
+reset
+run "-a" r s s k
+check "lib1 asked and kept" eq "app1" "$(removed)"
+check "lib1 protected" eq "lib1" "$(kept)"
+check "manager told lib1 is wanted" eq "lib1" "$(cat "$PROTECTED")"
+
+echo "# -y removes every revealed leaf unasked"
+reset
+run "-y" r r s
+check "all revealed removed" eq "app1 app2 lib1 lib2 lib3" "$(removed)"
+
+echo "# -n lists and changes nothing"
+reset
+echo tool >"$KEEP"
+ALWAYS_KEEP=(app2)
+run "-n"
+check "nothing removed" eq "" "$(removed)"
+check "lists leaves" grep -Eq '^  app1 +requested +App one' "$OUT"
+check "marks kept" grep -Eq '^  tool +requested +kept' "$OUT"
+check "marks built-in" grep -Eq '^  app2 +requested +built-in' "$OUT"
+check "keep file untouched" eq "tool" "$(kept)"
+
+echo "# q quits without removing"
+reset
+run "" r q
+check "nothing removed" eq "" "$(removed)"
+check "nothing protected" eq "" "$(kept)"
+
+echo "# s asks again next run"
+reset
+run "" s "" ""
+check "skipped leaf not protected" eq "app2 tool" "$(kept)"
+run "" r
+check "asked again and removed" eq "app1 lib1" "$(removed)"
+
+echo "# protected names are never offered"
+reset
+echo tool >"$KEEP"
+ALWAYS_KEEP=(app2)
+run "" r
+check "only app1 asked" eq "app1 lib1" "$(removed)"
+check "tool stays" grep -q '^tool' "$GRAPH"
+check "app2 stays" grep -q '^app2' "$GRAPH"
+check "tool not asked" absent '^tool (' "$OUT"
+
+echo "# -p reviews the protected list"
+reset
+printf '%s\n' '# my keeps' tool app1 gone >"$KEEP"
+run "-p" u r "" s
+check "shows status" grep -q '^tool (leaf)' "$OUT"
+check "reports dropped" grep -q 'dropping gone' "$OUT"
+check "removed from review, lib1 revealed" eq "app1 lib1" "$(removed)"
+check "released leaf asked in the pass" grep -q '^tool (requested)' "$OUT"
+check "keep file rewritten with comments" eq "# my keeps app2" "$(kept)"
+
+echo "# -p refuses to remove a protected non-leaf"
+reset
+echo lib1 >"$KEEP"
+run "-p" r k
+check "lib1 still installed" grep -q '^lib1' "$GRAPH"
+check "refusal shown" grep -q 'not a leaf' "$OUT"
+check "still protected" eq "lib1" "$(kept)"
+
+echo "# -p -n lists the protected names without prompting"
+reset
+printf '%s\n' tool gone >"$KEEP"
+ALWAYS_KEEP=(app2)
+run "-p -n"
+check "leaf status" grep -Eq '^  tool +leaf' "$OUT"
+check "not installed status" grep -Eq '^  gone +not installed' "$OUT"
+check "built-in shown" grep -q '^built-in: app2' "$OUT"
+check "file untouched" eq "tool gone" "$(kept)"
+
+echo
+if ((fails)); then
+  echo "$fails failures"
+  exit 1
+fi
+echo "all passed"

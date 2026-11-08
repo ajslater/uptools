@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+# prune the lua rocks no other rock depends on, old lua's rocks included
+#
+# luarocks has no leaves command and records nothing about why a rock was
+# installed, so the leaves are worked out from `luarocks show --deps` of every
+# installed rock and each one is asked about. Homebrew's luarocks follows
+# homebrew's lua: a lua upgrade leaves the rocks installed for the previous
+# lua in their own rocks-X.Y tree, which luarocks only touches when told
+# `--lua-version X.Y` and, that lua being gone, pointed at the current
+# interpreter (it runs no lua for what is done here). luaup installs those
+# rocks for the current lua too; this lists them as name@X.Y so the old tree
+# can go, leaf by revealed leaf. Every lua's rocks share one bin dir, so
+# removing an old lua's copy of a rock with commands takes the current lua's
+# wrappers with it: remove reinstalls that copy afterwards to put them back.
+#
+# usage: luaprune [-n] [-a|-y] [-p]    see prunelib for the flags
+set -euo pipefail
+
+# shellcheck source=prunelib
+source "$(dirname "$0")/prunelib"
+
+LUA_VERSION=$(luarocks config lua_version)
+LUA_BIN=$(luarocks config variables.LUA)
+ROCKS_DIR=$(luarocks config rocks_dir)
+# the lua versions with a rocks tree, and the tag that marks an old one's rocks
+VERSIONS=()
+declare -A TAG=()
+for dir in "$(dirname "$ROCKS_DIR")"/rocks-*/; do
+  [[ -d $dir ]] || continue
+  ver=${dir%/}
+  ver=${ver##*rocks-}
+  VERSIONS+=("$ver")
+  [[ $ver == "$LUA_VERSION" ]] || TAG[$ver]="@$ver"
+done
+
+# rocks X.Y COMMAND...: luarocks on the rocks of lua X.Y
+rocks() {
+  luarocks --lua-version "$1" "LUA=$LUA_BIN" "${@:2}"
+}
+
+# ver_of NAME: the lua version of NAME's tag, the current one without
+ver_of() {
+  if [[ $1 == *@* ]]; then
+    echo "${1##*@}"
+  else
+    echo "$LUA_VERSION"
+  fi
+}
+
+leaves() {
+  local ver tag text deps name version dep
+  local -a found=()
+  local -A vers=() needed=()
+  for ver in "${VERSIONS[@]}"; do
+    tag=${TAG[$ver]:-}
+    text=$(rocks "$ver" list --porcelain)
+    [[ $text ]] || continue
+    while IFS=$'\t' read -r name version _; do
+      found+=("$name$tag")
+      vers[$name$tag]=$version
+      deps=$(rocks "$ver" show --deps --porcelain "$name")
+      while read -r dep _; do
+        [[ -z $dep || $dep == lua ]] || needed[$dep$tag]=1
+      done <<<"$deps"
+    done <<<"$text"
+  done
+  for name in "${found[@]}"; do
+    [[ ${needed[$name]:-} ]] || printf '%s\tunknown\t%s\n' "$name" "${vers[$name]}"
+  done | sort
+}
+# luarocks remove takes one rock
+remove() {
+  local name ver redo
+  for name; do
+    ver=$(ver_of "$name")
+    name=${name%@*}
+    redo=''
+    if [[ $ver != "$LUA_VERSION" && -d $ROCKS_DIR/$name ]] &&
+      [[ $(rocks "$ver" show --porcelain "$name") == *$'\ncommand\t'* ]]; then
+      redo=1
+    fi
+    rocks "$ver" remove "$name"
+    if [[ $redo ]]; then
+      echo "reinstalling $name for lua $LUA_VERSION to put its commands back"
+      luarocks install --force "$name"
+    fi
+  done
+}
+installed() {
+  local ver text
+  for ver in "${VERSIONS[@]}"; do
+    text=$(rocks "$ver" list --porcelain)
+    [[ $text ]] || continue
+    cut -f1 <<<"$text" | sed "s/\$/${TAG[$ver]:-}/"
+  done
+}
+info() { rocks "$(ver_of "$1")" show "${1%@*}"; }
+PRUNE_WHAT="lua rocks"
+PRUNE_KEEP=lua
+ALWAYS_KEEP=()
+for ver in "${!TAG[@]}"; do
+  echo "rocks installed for lua $ver (luarocks follows lua $LUA_VERSION now) are listed as name@$ver"
+done
+prune_main "$@"

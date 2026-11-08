@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+# prune CPAN distributions no other installed distribution needs
+#
+# cpanm records each distribution it installs under site_perl's .meta:
+# install.json lists the modules it provides, MYMETA.json the modules it
+# requires. Matching requires to providers graphs the installed
+# distributions, and a leaf is one whose modules none of the others require.
+# Configure and build requires count along with runtime ones (Module-Build-
+# Tiny is only ever needed to build), test requires do not, and only the
+# latest version of a distribution is graphed, cpanm leaving superseded
+# versions in .meta. It sets install.json's target for dependencies too, so
+# nothing tells a requested distribution from a dependency and every leaf is
+# asked about. Newer versions of modules that ship with perl (CPAN, Encode,
+# Test-Simple, ...) are not offered: perlup would only install them again.
+# Removal is `cpanm --uninstall`, experimental but no more than unlinking the
+# files in the distribution's packlist; -f skips its confirmation, and the
+# .meta entries it leaves behind are removed afterwards.
+#
+# usage: perlprune [-n] [-a|-y] [-p]    see prunelib for the flags
+set -euo pipefail
+
+# shellcheck source=prunelib
+source "$(dirname "$0")/prunelib"
+
+# Run cpanm with homebrew's perl explicitly, as perlup does: its shebang may
+# point at system perl.
+BREW_PERL_PREFIX="$(brew --prefix perl)"
+BREW_PERL="${BREW_PERL_PREFIX}/bin/perl"
+CPANM=("$BREW_PERL" "$(command -v cpanm)")
+
+# graph COMMAND [DIST]: the installed distributions and what needs what
+#   leaves       name<TAB>unknown<TAB>abstract or version, one per leaf
+#   installed    every distribution that is not a core upgrade
+#   info DIST    its modules, what it requires and what requires it
+#   module DIST  a module it provides, for cpanm
+#   forget DIST  remove its .meta entries
+graph() {
+  "$BREW_PERL" - "$@" <<'EOF'
+use strict;
+use warnings;
+use Config;
+use ExtUtils::Installed;
+use File::Path qw(remove_tree);
+use JSON::PP qw(decode_json);
+use List::Util qw(any);
+use Module::CoreList;
+use version;
+
+sub read_json {
+  my ($file) = @_;
+  open my $fh, '<', $file or return;
+  local $/;
+  return decode_json(<$fh>);
+}
+
+# the latest version of each distribution, and every .meta dir it has
+my $meta = "$Config{installsitearch}/.meta";
+my (%dist, %dirs);
+for my $dir (glob "$meta/*") {
+  my $install = read_json("$dir/install.json") or next;
+  my $mymeta = read_json("$dir/MYMETA.json") || {};
+  my $name = $mymeta->{name} // $install->{dist} =~ s/-\Q$install->{version}\E$//r;
+  push @{$dirs{$name}}, $dir;
+  next if $dist{$name} && version->parse($dist{$name}{version}) >= version->parse($install->{version});
+  $dist{$name} = {
+    version => $install->{version},
+    packlist => lc $install->{name},
+    provides => [sort keys %{$install->{provides} || {}}],
+    requires => [map { keys %{$mymeta->{prereqs}{$_}{requires} || {}} } qw(runtime configure build)],
+    summary => $mymeta->{abstract} || $install->{version},
+  };
+}
+# A core upgrade provides a module perl ships. Any, not every: the internal
+# packages of CPAN, Test-Simple and the like are not in Module::CoreList.
+my %core = map { $_ => 1 } grep { any { Module::CoreList::is_core($_) } @{$dist{$_}{provides}} } keys %dist;
+
+# A needs B when A requires a module B provides.
+my %owner = map { my $d = $_; map { $_ => $d } @{$dist{$d}{provides}} } keys %dist;
+my (%needs, %needed_by);
+for my $d (sort keys %dist) {
+  my %once;
+  for my $o (map { $owner{$_} // () } @{$dist{$d}{requires}}) {
+    next if $o eq $d || $once{$o}++;
+    push @{$needs{$d}}, $o;
+    push @{$needed_by{$o}}, $d;
+  }
+}
+
+my ($cmd, $name) = @ARGV;
+die "perlprune: $name is not installed\n" if defined $name && !$dist{$name};
+if ($cmd eq 'leaves') {
+  my %graphed = map { $dist{$_}{packlist} => 1 } keys %dist;
+  for my $m (ExtUtils::Installed->new->modules) {
+    warn "perlprune: $m has no .meta entry, cannot be graphed\n" unless $m eq 'Perl' || $graphed{lc $m};
+  }
+  print "$_\tunknown\t$dist{$_}{summary}\n" for sort grep { !$core{$_} && !$needed_by{$_} } keys %dist;
+} elsif ($cmd eq 'installed') {
+  print "$_\n" for sort grep { !$core{$_} } keys %dist;
+} elsif ($cmd eq 'info') {
+  print "  provides:  @{$dist{$name}{provides}}\n";
+  print "  requires:  @{[sort @{$needs{$name} || []}]}\n";
+  print "  needed by: @{[sort @{$needed_by{$name} || []}]}\n";
+} elsif ($cmd eq 'module') {
+  print "$dist{$name}{provides}[0]\n";
+} elsif ($cmd eq 'forget') {
+  remove_tree(@{$dirs{$name}});
+} else {
+  die "perlprune: unknown graph command $cmd\n";
+}
+EOF
+}
+
+leaves() { graph leaves; }
+installed() { graph installed; }
+info() { graph info "$1"; }
+remove() {
+  local name
+  for name; do
+    "${CPANM[@]}" --uninstall -f "$(graph module "$name")"
+    graph forget "$name"
+  done
+}
+PRUNE_WHAT="perl modules"
+PRUNE_KEEP=perl
+# perlup runs cpan-outdated
+ALWAYS_KEEP=(cpan-outdated)
+prune_main "$@"

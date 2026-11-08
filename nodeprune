@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# prune the global node packages: npm's, then bun's
+#
+# Each manager keeps its globals as the top level dependencies of one project
+# (npm's under `npm root -g`, bun's in ~/.bun/install/global) and uninstalls a
+# package together with everything only it needed, so every global is a leaf
+# that was asked for by name, and removing one never reveals another. nodeup
+# updates bun's set and only reports npm's, which should hold nothing beyond
+# what ships with node, so npm's gets a pass of its own, first.
+#
+# usage: nodeprune [-n] [-a|-y] [-p]    see prunelib for the flags
+set -euo pipefail
+
+# shellcheck source=prunelib
+source "$(dirname "$0")/prunelib"
+
+installed() { leaves | cut -f1; } # every global is a leaf
+
+# npm
+leaves() {
+  local text
+  # npm exits 1 when it finds problems in the tree, with the JSON still complete
+  text=$(npm ls -g --depth=0 --json) || true
+  node -e '
+    const deps = JSON.parse(require("fs").readFileSync(0, "utf8")).dependencies ?? {}
+    for (const name of Object.keys(deps).sort())
+      console.log(name + "\trequested\t" + (deps[name].version ?? ""))
+  ' <<<"$text"
+}
+remove() { npm uninstall -g "$@"; }
+info() { npm ls -g "$1"; }
+PRUNE_WHAT="npm global packages"
+PRUNE_KEEP=npm
+ALWAYS_KEEP=(npm corepack)
+prune_main "$@"
+
+# bun: the project's package.json names the globals, node_modules has what
+# is installed for them
+BUN_GLOBAL="$HOME/.bun/install/global"
+leaves() {
+  node -e '
+    const root = process.argv[1]
+    let deps = {}
+    try { deps = require(root + "/package.json").dependencies ?? {} } catch {}
+    for (const name of Object.keys(deps).sort()) {
+      let version = deps[name]
+      try { version = require(root + "/node_modules/" + name + "/package.json").version } catch {}
+      console.log(name + "\trequested\t" + version)
+    }
+  ' "$BUN_GLOBAL"
+}
+remove() { bun remove -g "$@"; }
+info() {
+  node -p 'const p = require(process.argv[1]); (p.description ?? "") + "\n" + (p.homepage ?? "")' \
+    "$BUN_GLOBAL/node_modules/$1/package.json"
+}
+PRUNE_WHAT="bun global packages"
+PRUNE_KEEP=bun
+ALWAYS_KEEP=()
+prune_main "$@"

@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+# prune homebrew leaves: casks, then formulae nothing depends on
+#
+# `brew leaves` lists the installed formulae no other formula or cask depends
+# on, and with -p only those homebrew installed as dependencies, which is what
+# `brew autoremove` would remove. Uninstalling leaves their dependencies
+# behind, so remove runs `brew autoremove` after `brew uninstall` and the
+# driver asks about the leaves that reveals which were installed on request.
+# A kept dependency is marked installed on request so autoremove never takes
+# it. Every cask is a leaf (casks depend on formulae, never the other way), so
+# they get a pass of their own, first, so that formulae only a removed cask
+# needed are offered in the same run.
+#
+# usage: brewprune [-n] [-a|-y] [-p]    see prunelib for the flags
+set -euo pipefail
+export HOMEBREW_NO_ENV_HINTS=1 HOMEBREW_NO_AUTO_UPDATE=1
+
+# shellcheck source=prunelib
+source "$(dirname "$0")/prunelib"
+
+# describe TYPE WHY NAME...: name<TAB>why<TAB>summary, the summaries from one
+# `brew desc` call, paired by position because it prints tapped formulae by
+# their short name
+describe() {
+  local type=$1 reason=$2 name desc i=0
+  local -a descs=()
+  shift 2
+  (($#)) || return 0
+  mapfile -t descs < <(brew desc "--$type" "$@")
+  ((${#descs[@]} == $#)) || descs=()
+  for name; do
+    desc=${descs[i]:-}
+    printf '%s\t%s\t%s\n' "$name" "$reason" "${desc#*: }"
+    i=$((i + 1))
+  done
+}
+
+autoremove() {
+  [[ $PRUNE_ASK_ALL ]] || brew autoremove
+}
+
+# casks
+leaves() {
+  local text
+  local -a casks=()
+  text=$(brew list --cask)
+  [[ $text ]] && mapfile -t casks <<<"$text"
+  describe cask requested "${casks[@]}"
+}
+remove() {
+  brew uninstall --cask "$@"
+  autoremove
+}
+installed() { brew list --cask; }
+info() { brew info --cask "$1"; }
+PRUNE_WHAT="homebrew casks"
+PRUNE_KEEP=brew-cask
+ALWAYS_KEEP=()
+prune_main "$@"
+
+# formulae
+leaves() {
+  local text name
+  local -a all=() deps=() requested=()
+  local -A dep=()
+  text=$(brew leaves)
+  [[ $text ]] && mapfile -t all <<<"$text"
+  text=$(brew leaves -p)
+  [[ $text ]] && mapfile -t deps <<<"$text"
+  for name in "${deps[@]}"; do
+    dep[$name]=1
+  done
+  for name in "${all[@]}"; do
+    [[ ${dep[$name]:-} ]] || requested+=("$name")
+  done
+  describe formula requested "${requested[@]}"
+  describe formula dependency "${deps[@]}"
+}
+remove() {
+  brew uninstall --formula "$@"
+  autoremove
+}
+installed() { brew list --formula; }
+info() {
+  brew info --formula "$1"
+  echo "used by: $(brew uses --installed --recursive "$1" | tr '\n' ' ')"
+}
+protect() { brew tab --installed-on-request "$@"; }
+PRUNE_WHAT="homebrew formulae"
+PRUNE_KEEP=brew
+# What install installs and the update scripts run on. python3 is an alias,
+# so resolve every name through its opt path.
+prefixes=$(brew --prefix rust python3 node bun ruby rbenv luarocks perl cpanminus)
+mapfile -t ALWAYS_KEEP <<<"$prefixes"
+ALWAYS_KEEP=("${ALWAYS_KEEP[@]##*/}")
+pinned=$(brew list --pinned)
+[[ $pinned ]] && echo "pinned (against upgrades only, can still be removed): ${pinned//$'\n'/ }"
+prune_main "$@"

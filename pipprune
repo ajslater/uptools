@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# prune the python packages in ~/.venv that nothing else needs
+#
+# pip has no leaf command. `pip list --not-required` comes close but ignores
+# extras: the validators jsonschema pulls in through its `format` extra show
+# up there as unwanted, though whatever asked for jsonschema[format] needs
+# them. So this reads the installed metadata itself and counts a requirement
+# whose marker holds for any extra its depender declares, which never offers
+# a package another one can use. Those pip recorded as installed by name (the
+# REQUESTED marker, PEP 376) are `requested`, the rest `dependency`. pip
+# uninstalls only what it is told and leaves what that package needed behind,
+# so the driver sees those as revealed leaves and removes or asks about them.
+#
+# usage: pipprune [-n] [-a|-y] [-p]    see prunelib for the flags
+set -euo pipefail
+
+# shellcheck source=prunelib
+source "$(dirname "$0")/prunelib"
+
+# the venv pipup updates; packaging is installed there as pip-review's
+VENV="$HOME/.venv"
+
+leaves() {
+  "$VENV/bin/python" - <<'EOF'
+from importlib.metadata import distributions
+from packaging.requirements import Requirement
+from packaging.utils import canonicalize_name
+
+dists = {canonicalize_name(d.metadata["Name"]): d for d in distributions()}
+needed = set()
+for name, dist in dists.items():
+    # a requirement behind an extra counts as if every extra were wanted
+    extras = [""] + dist.metadata.get_all("Provides-Extra", [])
+    for req in map(Requirement, dist.requires or []):
+        dep = canonicalize_name(req.name)
+        if dep == name or dep not in dists:
+            continue
+        if req.marker is None or any(req.marker.evaluate({"extra": e}) for e in extras):
+            needed.add(dep)
+for name in sorted(dists.keys() - needed):
+    dist = dists[name]
+    why = "requested" if dist.read_text("REQUESTED") is not None else "dependency"
+    print(name, why, " ".join((dist.metadata.get("Summary") or "").split()), sep="\t")
+EOF
+}
+remove() { "$VENV/bin/pip" uninstall -y "$@"; }
+installed() {
+  "$VENV/bin/python" -c 'from importlib.metadata import distributions
+from packaging.utils import canonicalize_name
+print(*sorted({canonicalize_name(d.metadata["Name"]) for d in distributions()}), sep="\n")'
+}
+info() { "$VENV/bin/pip" show "$1"; }
+PRUNE_WHAT="python packages in $VENV"
+PRUNE_KEEP=pip
+# what install sets up and pipup and this script run on
+ALWAYS_KEEP=(pip pip-review setuptools wheel packaging)
+prune_main "$@"

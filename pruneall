@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# run all the leaf pruners, for the yearly package audit
+#
+# Language package managers first and homebrew last, so that an interpreter
+# is only offered once what was installed on top of it has been looked at.
+# Flags are passed through: `pruneall -p` re-examines every name kept before.
+set -euo pipefail
+
+for pruner in pipprune nodeprune gemprune luaprune perlprune rustprune goprune brewprune; do
+  "$pruner" "$@"
+done

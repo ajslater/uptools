@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# prune the crates installed with `cargo install`
+#
+# Every one of them is a leaf: cargo compiles a crate's dependencies into its
+# binaries and installs only what it is told, so each was asked for by name
+# and removing one never reveals another. `cargo install --list` prints a
+# `name vX.Y.Z:` line per crate above its indented binaries; the version is
+# the summary and the whole block the info. rustup runs cargo-update.
+#
+# usage: rustprune [-n] [-a|-y] [-p]    see prunelib for the flags
+set -euo pipefail
+
+# shellcheck source=prunelib
+source "$(dirname "$0")/prunelib"
+
+leaves() {
+  local text line name version
+  text=$(cargo install --list)
+  while IFS= read -r line; do
+    [[ $line == [![:space:]]* ]] || continue
+    read -r name version <<<"$line"
+    printf '%s\t%s\t%s\n' "$name" requested "${version%:}"
+  done <<<"$text"
+}
+remove() { cargo uninstall "$@"; }
+installed() { leaves | cut -f1; }
+info() {
+  cargo install --list | awk -v name="$1" '/^[^[:space:]]/ { p = $1 == name } p'
+}
+PRUNE_WHAT="cargo crates"
+PRUNE_KEEP=cargo
+ALWAYS_KEEP=(cargo-update)
+prune_main "$@"
