@@ -1,0 +1,132 @@
+DEVENV_PYTHON := 1
+export DEVENV_PYTHON
+
+.PHONY: clean
+## Clean python caches
+## @category Clean
+clean::
+	find . \( -name node_modules -o -path '*/.*' \) -prune -o -name __pycache__ -type d -print0 | xargs -0 rm -rf
+	rm -rf .coverage .coverage.*
+
+.PHONY: install-prod
+## Install for production
+## @category Install
+install-prod:
+	uv sync --no-install-project --no-dev
+
+.PHONY: install
+## Install with dev and all extras and groups
+## @category Install
+install::
+	uv sync --no-install-project --all-extras --all-groups --all-packages
+
+.PHONY: update-python
+## Update python dependencies
+## @category Update
+update-python:
+	./bin/update-deps-python.sh
+
+.PHONY: update
+## Update dependencies
+## @category Update
+update:: update-python
+
+.PHONY: version
+## Show or set project version for python
+## @category Update
+version::
+	bin/version-python.sh $(V)
+
+.PHONY: fix-python
+## Fix python lint errors
+## @category Fix
+fix-python:
+	./bin/fix-python.sh
+
+.PHONY: fix-complexity
+## Refactor python functions over the complexity limit
+## @category Fix
+fix-complexity:
+	./bin/fix-complexity.sh
+
+.PHONY: fix
+## Fix python lint errors
+## @category Fix
+fix:: fix-python
+
+.PHONY: typecheck
+## Static typecheck
+## @category Lint
+typecheck:
+	uv run --group lint --group test --group build basedpyright .
+
+.PHONY: ty
+## Static typecheck with ty
+## @category Lint
+ty:
+	uv run --group lint --group test --group build ty check .
+
+.PHONY: vulture
+## Lint dead code with vulture
+## @category Lint
+vulture:
+	./bin/lint-vulture.sh
+
+.PHONY: complexity
+## Lint backend complexity
+## @category Lint
+complexity:
+	./bin/lint-complexity.sh
+
+.PHONY: lint-python
+## Lint python
+## @category Lint
+lint-python:
+	./bin/lint-python.sh
+
+.PHONY: lint
+## Lint python
+## @category Lint
+lint:: lint-python
+
+.PHONY: uml
+## Create a UML class diagram
+## @category Lint
+uml:
+	bin/uml.sh
+
+.PHONY: cycle
+## Detect Circular imports
+## @category Lint
+cycle:
+	uvx pycycle --ignore node_modules,.venv --verbose --here
+
+## Tests to run, as pytest arguments
+## @category Test
+T :=
+.PHONY: test-python
+## Test Python
+## @category Test
+test-python:
+	./bin/test-python.sh $(T)
+
+.PHONY: test
+## Run Python Tests. Use T variable to run specific tests
+## @category Test
+test:: test-python
+
+ifndef OVERRIDE_BUILD
+.PHONY: build
+## Build package
+## @category Build
+build::
+	uv build
+endif
+
+ifndef OVERRIDE_PUBLISH
+.PHONY: publish
+## Publish package to pypi
+## @category Deploy
+publish:
+	uv publish
+endif

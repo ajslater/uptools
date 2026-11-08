@@ -1,0 +1,16 @@
+*.sh
+*Dockerfile
+.claude/settings.local.json
+.claude/worktrees/
+.git
+__pycache__
+bun.lock
+dist
+node_modules
+tasks
+test-results
+tests/**/*.json
+tests/**/*.xml
+tests/**/*.yaml
+tests/**/*.yml
+uv.lock
