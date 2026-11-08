@@ -6,6 +6,10 @@ set -euo pipefail
 source "$(dirname "$0")/uptitle"
 
 title node
+# Without BUN_INSTALL, bun keeps its global packages under XDG_CACHE_HOME when
+# that is set, so a shell that sets one but not the other would update (or
+# install into) an empty set. Pin the dir the interactive shell uses.
+export BUN_INSTALL="${BUN_INSTALL:-$HOME/.bun}"
 bun update -g
 
 # npm keeps a global set of its own that bun never sees, so a package added
