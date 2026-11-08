@@ -12,7 +12,7 @@ Update rust cargo
 Update python3 packages
 
 ## nodeup
-Update bun's global node packages
+Update bun's global node packages. Lists any installed with npm instead, which bun never sees.
 
 ## gemup
 Updates rubygems and the gems installed on top of homebrew's ruby. The gems that ship with ruby are left to homebrew.
@@ -21,7 +21,7 @@ Updates rubygems and the gems installed on top of homebrew's ruby. The gems that
 Removes copies of the gems that ship with ruby that an old `gem update` installed beside them, plus leftovers of failed installs and extensions built for a previous macOS. Run by hand, `-n` only lists.
 
 ## luaup
-Updates lua rocks
+Updates lua rocks. Rocks installed for a previous lua are installed for the current one first.
 
 ## perlup
 Updates perl packages with cpanminus and cpan-outdated

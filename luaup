@@ -6,8 +6,27 @@ set -euo pipefail
 source "$(dirname "$0")/uptitle"
 
 title lua
+# Homebrew's luarocks follows homebrew's lua, so a lua upgrade leaves the rocks
+# installed for the previous lua in their own rocks-X.Y tree, which luarocks
+# no longer sees (it cannot even list them without that lua). Install those
+# rocks for the current lua too; luaprune removes the old tree.
+ROCKS_DIR="$(luarocks config rocks_dir)"
+failed=()
+shopt -s nullglob
+for old in "$(dirname "$ROCKS_DIR")"/rocks-*/*/; do
+  rock="$(basename "$old")"
+  [[ $old == "$ROCKS_DIR"/* || -d $ROCKS_DIR/$rock ]] && continue
+  luarocks install "$rock" || failed+=("$rock")
+done
+shopt -u nullglob
+
 # luarocks install accepts a single rock, so upgrade outdated rocks one at a time.
 luarocks list --outdated --porcelain | awk '{ print $1 }' |
   while read -r rock; do
     luarocks install "$rock"
   done
+
+if ((${#failed[@]})); then
+  echo "Not installed for the current lua: ${failed[*]}"
+  exit 1
+fi

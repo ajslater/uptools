@@ -7,3 +7,12 @@ source "$(dirname "$0")/uptitle"
 
 title node
 bun update -g
+
+# npm keeps a global set of its own that bun never sees, so a package added
+# with `npm i -g` would go stale here unnoticed. npm and corepack ship with
+# node; anything else belongs in bun (bun add -g ...; npm uninstall -g ...).
+npm_root="$(npm root -g)"
+stray="$(npm ls -g --depth=0 --parseable | sed -n "s|^$npm_root/||p" | grep -vx -e npm -e corepack || true)"
+if [[ -n $stray ]]; then
+  echo "Installed with npm, not bun, so not updated: ${stray//$'\n'/ }"
+fi
