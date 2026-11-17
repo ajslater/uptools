@@ -28,7 +28,7 @@
 #   -n  list the leaves and exit    -p  review the protected names first
 #   -a  ask about every revealed leaf, -y  remove every revealed leaf
 
-# shellcheck source=uptitle
+# shellcheck source=src/uptitle
 source "$(dirname "${BASH_SOURCE[0]}")/uptitle"
 
 prune_usage() {

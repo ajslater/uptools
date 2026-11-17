@@ -6,8 +6,8 @@
 # the prompts are fed on stdin.
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 1
-# shellcheck source=prunelib
-source ./prunelib
+# shellcheck source=src/prunelib
+source ./src/prunelib
 
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT

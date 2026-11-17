@@ -14,7 +14,7 @@
 # usage: pipprune [-n] [-a|-y] [-p]    see prunelib for the flags
 set -euo pipefail
 
-# shellcheck source=prunelib
+# shellcheck source=src/prunelib
 source "$(dirname "$0")/prunelib"
 
 # the venv pipup updates; packaging is installed there as pip-review's

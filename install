@@ -7,10 +7,8 @@ else
   install_cmd=(cp)
 fi
 
-# the scripts this repo installs
-SRC_DIR="$(cd "$(dirname "$0")" && pwd)"
-SCRIPTS=(uptitle brewup upall gemup gemdedup perlup nodeup rustup pipup luaup
-  prunelib pruneall brewprune pipprune nodeprune gemprune luaprune perlprune rustprune goprune)
+# the scripts this repo installs: every file in src/
+SRC_DIR="$(cd "$(dirname "$0")" && pwd)/src"
 
 # basics
 sudo xcode-select -s /Library/Developer/CommandLineTools
@@ -40,7 +38,8 @@ fi
 
 # this repo's custom scripts
 DEST_DIR=/usr/local/bin
-for script in "${SCRIPTS[@]}"; do
-  rm -f "$DEST_DIR/$script"
-  "${install_cmd[@]}" "$SRC_DIR/$script" "$DEST_DIR/$script"
+for script in "$SRC_DIR"/*; do
+  dest="$DEST_DIR/${script##*/}"
+  rm -f "$dest"
+  "${install_cmd[@]}" "$script" "$dest"
 done
