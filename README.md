@@ -63,8 +63,8 @@ Binaries in `$GOBIN`.
 Runs every pruner, language package managers first and homebrew last. `pruneall -p` then `upall` is the yearly audit.
 
 ## install
-Install homebrew versions of rust, python, node, bun, ruby, lua and perl as well as tools for updating rust, python and perl. Copy or symlink the updater and pruner scripts to /usr/local/bin/
-Optionally installs symlinks to this cloned directory with -l parameter
+Install homebrew versions of rust, python, node, bun, ruby, lua and perl as well as tools for updating rust, python and perl. Copy or symlink the updater and pruner scripts, which live in `src/`, to /usr/local/bin/
+Optionally installs symlinks to this cloned directory's `src/` with -l parameter
 
 ```sh
 $ ./install -l

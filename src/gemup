@@ -2,7 +2,7 @@
 # update ruby gems
 set -euo pipefail
 
-# shellcheck source=uptitle
+# shellcheck source=src/uptitle
 source "$(dirname "$0")/uptitle"
 
 title ruby
