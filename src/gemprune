@@ -13,7 +13,7 @@
 # usage: gemprune [-n] [-a|-y] [-p]    see prunelib for the flags
 set -euo pipefail
 
-# shellcheck source=prunelib
+# shellcheck source=src/prunelib
 source "$(dirname "$0")/prunelib"
 
 # gems leaves|installed: the gems installed on top of ruby, the leaves among

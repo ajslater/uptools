@@ -2,7 +2,7 @@
 # update homebrew formulae and casks
 set -euo pipefail
 export HOMEBREW_NO_ENV_HINTS=1
-# shellcheck source=uptitle
+# shellcheck source=src/uptitle
 source "$(dirname "$0")/uptitle"
 
 title homebrew
